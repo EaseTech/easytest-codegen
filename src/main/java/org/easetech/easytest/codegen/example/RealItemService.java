@@ -2,6 +2,14 @@
 package org.easetech.easytest.codegen.example;
 
 import java.util.ArrayList;
+import org.easetech.easytest.codegen.example.dto.Item;
+import org.easetech.easytest.codegen.example.dto.ItemId;
+import org.easetech.easytest.codegen.example.dto.LibraryId;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class RealItemService implements ItemService {
 
@@ -71,4 +79,3 @@ public class RealItemService implements ItemService {
     }*/
 
 }
-
