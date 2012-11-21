@@ -45,7 +45,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
      * An instance of logger associated.
      */
     public static final Logger LOG = LoggerFactory.getLogger(TestingStrategy.class);
-  
+	
 	// TODO Accessor Tests fuer Enumerations
 
     protected static final String TESTSUITE_SUITE_METHOD_NAME = "suite";
@@ -116,28 +116,35 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return returnValue;
     }
 
-    public boolean codeTestSuite(PackageDoc[] packageDocs, int indexPackage, INamingStrategy naming,
-                                 StringBuffer newCode, Properties properties) {
+    public boolean codeTestSuite(TestSuiteVO testSuiteVO,int indexPackage) {
 
         LOG.info("codeTestSuite started");
     	boolean    returnValue;
         Properties addProps;
         String     template;
+        PackageDoc[] packageDocs = testSuiteVO.getPackageDocs();
 
         returnValue = (packageDocs != null);
         returnValue = returnValue && (indexPackage >= 0);
         returnValue = returnValue && (indexPackage < packageDocs.length);
-        returnValue = returnValue && (naming != null);
-        returnValue = returnValue && (newCode != null);
-        returnValue = returnValue && (properties != null);
+        returnValue = returnValue && (testSuiteVO.getNaming() != null);
+        returnValue = returnValue && (testSuiteVO.getNewCode() != null);
+        returnValue = returnValue && (testSuiteVO.getProperties() != null);
 
         if (returnValue) {
-            returnValue = isTestablePackage(packageDocs[indexPackage], naming);
+            returnValue = isTestablePackage(packageDocs[indexPackage], testSuiteVO.getNaming());
 
             if (returnValue) {    // test this package
-                addProps = getTestSuiteProperties(packageDocs, indexPackage, naming, properties);
+                addProps = getTestSuiteProperties(testSuiteVO,indexPackage);
                 template = getTemplate(addProps, "testsuite", addProps.getProperty(TEMPLATE_NAME));
-                newCode.append(StringHelper.replaceVariables(template, addProps));
+                
+                if(addProps.getProperty(TESTSUITE_ADD_TESTCASES)!=null && 
+                		!"".equals(addProps.getProperty(TESTSUITE_ADD_TESTCASES))) {
+                	testSuiteVO.getNewCode().append(StringHelper.replaceVariables(template, addProps));                
+                } else {
+                	System.out.println("There are no test classes for your preference " +
+                			"in this suite hence no test suite will be generated:"+packageDocs[indexPackage].name()); 
+                }
             } // no else
         } else {
             printError("TestingStrategy.codeTestSuite() parameter error");
@@ -169,8 +176,14 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
                 addProps = getTestCaseProperties(testCaseVO);
                 template = getTemplate(addProps, "testcase", addProps.getProperty(TEMPLATE_NAME));
                 LOG.debug("getTestCaseProperties:"+addProps);
-                LOG.debug("template:"+template);   
-                testCaseVO.getNewCode().append(StringHelper.replaceVariables(template, addProps));                
+                LOG.debug("template:"+template); 
+                if(addProps.getProperty(TESTCASE_TESTMETHODS)!=null && 
+                		!"".equals(addProps.getProperty(TESTCASE_TESTMETHODS))) {
+                	testCaseVO.getNewCode().append(StringHelper.replaceVariables(template, addProps));                
+                } else {
+                	LOG.info("There are no test methods for your preference " +
+                			"in this class hence no test case will be generated:"+testCaseVO.getClassDoc().name()); 
+                }
                 
             } // no else
         } else {
@@ -228,18 +241,17 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
     }
     
 
-	public Properties getTestSuiteProperties(PackageDoc[] packageDocs, int indexPackage, INamingStrategy naming,
-                                             Properties properties) {
+	public Properties getTestSuiteProperties(TestSuiteVO testSuiteVO, int indexPackage) {
 
-        Properties returnValue = new Properties(properties);
+        Properties returnValue = new Properties(testSuiteVO.getProperties());
 
-        returnValue.setProperty(TESTSUITE_PACKAGE_NAME, naming.getTestPackageName(packageDocs[indexPackage].name()));
-        returnValue.setProperty(TESTSUITE_CLASS_NAME, naming.getTestSuiteName(packageDocs[indexPackage].name()));
+        returnValue.setProperty(TESTSUITE_PACKAGE_NAME, testSuiteVO.getNaming().getTestPackageName(testSuiteVO.getPackageDocs()[indexPackage].name()));
+        returnValue.setProperty(TESTSUITE_CLASS_NAME, testSuiteVO.getNaming().getTestSuiteName(testSuiteVO.getPackageDocs()[indexPackage].name()));
         returnValue.setProperty(TEMPLATE_NAME, TEMPLATE_ATTRIBUTE_DEFAULT);
-        returnValue.setProperty(TESTSUITE_ADD_TESTSUITES, getTestSuiteAddTestSuites(packageDocs, indexPackage, naming, properties));
-        returnValue.setProperty(TESTSUITE_ADD_TESTCASES, getTestSuiteAddTestCases(packageDocs, indexPackage, naming, properties));
-        returnValue.setProperty(TESTSUITE_IMPORTS, getTestSuiteImports(packageDocs, indexPackage, naming, properties));
-        returnValue.setProperty(PACKAGE_NAME, packageDocs[indexPackage].name());
+        returnValue.setProperty(TESTSUITE_ADD_TESTSUITES, getTestSuiteAddTestSuites(testSuiteVO,indexPackage));
+        returnValue.setProperty(TESTSUITE_ADD_TESTCASES, getTestSuiteAddTestCases(testSuiteVO,indexPackage));
+        returnValue.setProperty(TESTSUITE_IMPORTS, getTestSuiteImports(testSuiteVO,indexPackage));
+        returnValue.setProperty(PACKAGE_NAME, testSuiteVO.getPackageDocs()[indexPackage].name());
         return returnValue;
     }
 
@@ -461,7 +473,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
  			}
  			isSkipped = true;
  		}
- 		System.out.println("skipCommentLines finished ");
+ 		
  		return textIndex;		
  	}
 
@@ -591,6 +603,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
     	} else {
     		LOG.debug("Type is not matched with any condition:"+isTypeEditor(type));
     	}
+    	LOG.debug("codeConvertersAndEditors setter data:"+data);
     	LOG.debug("codeConvertersAndEditors finished :"+type.qualifiedTypeName());
 	}
 
@@ -753,6 +766,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 	        	// TODO check parameter type and add default values of that type
         		data.put(typeFields[i].name(), "defaultString");
         		
+        		
 	        	if(isMandatory(testMethodVO.getMethodSourceCode(),parameterName,typeFields[i].name())){
 	        		mandatoryFields.add(typeFields[i].name());
 	        	}
@@ -777,6 +791,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         }
         LOG.debug("setterCode:"+setterCode);
         LOG.debug("codeConverterSetters started :"+type.qualifiedTypeName());
+        LOG.debug("converter setter data:"+data);
 		return setterCode.toString();
 	}
 
@@ -887,7 +902,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
     	if(isJavaDateType(fieldType)) {
     		isTypeEditor = false;
     	} else {
-    		isTypeEditor = isTypeEnum(fieldType);
+    		isTypeEditor = isTypeEnum(fieldType) || isTypeJodaDateTime(fieldType);
     	}
 		return isTypeEditor;
 	}
@@ -977,7 +992,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 		return utilMethodName;
 	}
 
-	public String getTestSuiteAddTestSuites(PackageDoc[] packageDocs, int indexPackage, INamingStrategy naming, Properties properties) {
+	public String getTestSuiteAddTestSuites(TestSuiteVO testSuiteVO, int indexPackage) {
         StringBuffer sb;
         String template;
         String templateForNormalItem;
@@ -986,20 +1001,20 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         PackageDoc[] subPackages;
 
         sb                    = new StringBuffer();
-        addProps              = new Properties(properties);
-        templateForNormalItem = getTemplate(properties, ADD_TESTSUITE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT);
-        templateForLastItem   = getTemplate(properties, ADD_TESTSUITE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT_LAST);
+        addProps              = new Properties(testSuiteVO.getProperties());
+        templateForNormalItem = getTemplate(testSuiteVO.getProperties(), ADD_TESTSUITE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT);
+        templateForLastItem   = getTemplate(testSuiteVO.getProperties(), ADD_TESTSUITE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT_LAST);
 
-        subPackages = getDirectSubPackages(packageDocs, indexPackage);
+        subPackages = getDirectSubPackages(testSuiteVO.getPackageDocs(), indexPackage);
         for (int i=0; i<subPackages.length; i++) {
             if( i==subPackages.length-1 && isNotEmpty(templateForLastItem) ) {
                 template = templateForLastItem;
             } else {
                 template = templateForNormalItem;
             }
-            if (isTestablePackage(subPackages[i], naming)) {
-                addProps.setProperty(ADD_TESTSUITE_NAME, naming.getTestSuiteName(subPackages[i].name()));
-                addProps.setProperty(TESTSUITE_PACKAGE_NAME, naming.getTestPackageName(subPackages[i].name()));
+            if (isTestablePackage(subPackages[i], testSuiteVO.getNaming())) {
+                addProps.setProperty(ADD_TESTSUITE_NAME, testSuiteVO.getNaming().getTestSuiteName(subPackages[i].name()));
+                addProps.setProperty(TESTSUITE_PACKAGE_NAME, testSuiteVO.getNaming().getTestPackageName(subPackages[i].name()));
                 sb.append(StringHelper.replaceVariables(template, addProps));
             }
         }
@@ -1007,57 +1022,59 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return sb.toString();
     }
 
-    public String getTestSuiteAddTestCases(PackageDoc[] packageDocs, int indexPackage, INamingStrategy naming, Properties properties) {
+    public String getTestSuiteAddTestCases(TestSuiteVO testSuiteVO, int indexPackage) {
         StringBuffer sb;
         String template;
         String templateForNormalItem;
         String templateForLastItem;
         Properties addProps;
-        ClassDoc[] classes;
+        //ClassDoc[] classes;
 
         sb                    = new StringBuffer();
-        addProps              = new Properties(properties);
-        templateForNormalItem = getTemplate(properties, ADD_TESTCASE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT);
-        templateForLastItem   = getTemplate(properties, ADD_TESTCASE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT_LAST);
-        classes               = packageDocs[indexPackage].ordinaryClasses();
+        addProps              = new Properties(testSuiteVO.getProperties());
+        templateForNormalItem = getTemplate(testSuiteVO.getProperties(), ADD_TESTCASE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT);
+        templateForLastItem   = getTemplate(testSuiteVO.getProperties(), ADD_TESTCASE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT_LAST);
+        //classes               = testSuiteVO.getPackageDocs()[indexPackage].ordinaryClasses();
 
         // If there are any testsuites, they are placed behind the testcases.
         // In such case, we never use the template for last testcase (the one without trailing ',').
-        if( getDirectSubPackages(packageDocs, indexPackage).length>0 ) {
+        if( getDirectSubPackages(testSuiteVO.getPackageDocs(), indexPackage).length>0 ) {
             templateForLastItem = null;
         }
+        List<String> testClassNames = testSuiteVO.getTestClasses();
 
-        for (int i=0; i<classes.length; i++) {
-            if( i==classes.length-1 && isNotEmpty(templateForLastItem) ) {
-                template = templateForLastItem;
-            } else {
-                template = templateForNormalItem;
-            }
-            if (isTestableClass(classes[i], naming)) {
-                addProps.setProperty(ADD_TESTCASE_NAME, naming.getTestCaseName(classes[i].name()));
-                addProps.setProperty(TESTSUITE_PACKAGE_NAME, naming.getTestPackageName(packageDocs[indexPackage].name()));
-                sb.append(StringHelper.replaceVariables(template, addProps));
-            }
+        for (int i=0; i<testClassNames.size(); i++) {
+            //if (isTestableClass(classes[i], testSuiteVO.getNaming())) {
+                addProps.setProperty(ADD_TESTCASE_NAME, testClassNames.get(i));
+                //addProps.setProperty(TESTSUITE_PACKAGE_NAME, testSuiteVO.getNaming().getTestPackageName(testSuiteVO.getPackageDocs()[indexPackage].name()));
+                //sb.append(StringHelper.replaceVariables(template, addProps));
+                if(i<testClassNames.size()-1){
+                	sb.append(StringHelper.replaceVariables(templateForNormalItem, addProps));
+                } else {
+                	sb.append(StringHelper.replaceVariables(templateForLastItem, addProps));
+                }
+            //}
         }
 
         return sb.toString();
     }
 
-    public String getTestSuiteImports(PackageDoc[] packageDocs, int indexPackage, INamingStrategy naming, Properties properties) {
+
+	public String getTestSuiteImports(TestSuiteVO testSuiteVO, int indexPackage) {
         StringBuffer sb;
         String template;
         Properties addProps;
         PackageDoc[] subPackages;
 
         sb = new StringBuffer();
-        addProps = new Properties(properties);
-        template = getTemplate(properties, ADD_IMPORT_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT);
+        addProps = new Properties(testSuiteVO.getProperties());
+        template = getTemplate(testSuiteVO.getProperties(), ADD_IMPORT_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT);
 
-        subPackages = getDirectSubPackages(packageDocs, indexPackage);
+        subPackages = getDirectSubPackages(testSuiteVO.getPackageDocs(), indexPackage);
         for (int i=0; i<subPackages.length; i++) {
-            if (isTestablePackage(subPackages[i], naming)) {
-                addProps.setProperty(ADD_TESTSUITE_NAME, naming.getTestSuiteName(subPackages[i].name()));
-                addProps.setProperty(TESTSUITE_PACKAGE_NAME, naming.getTestPackageName(subPackages[i].name()));
+            if (isTestablePackage(subPackages[i], testSuiteVO.getNaming())) {
+                addProps.setProperty(ADD_TESTSUITE_NAME, testSuiteVO.getNaming().getTestSuiteName(subPackages[i].name()));
+                addProps.setProperty(TESTSUITE_PACKAGE_NAME, testSuiteVO.getNaming().getTestPackageName(subPackages[i].name()));
                 sb.append(StringHelper.replaceVariables(template, addProps));
             }
         }
@@ -1581,4 +1598,3 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return returnValue;
     }
 }
-
