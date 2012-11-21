@@ -1,9 +1,18 @@
+/*
     This file is part of  EasyTest CodeGen, a project to generate 
+    JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
+    during refactoring.
+ 	EasyTest CodeGen, a tool provided by
+	EaseTech Organization Under Apache License 2.0 
+	http://www.apache.org/licenses/LICENSE-2.0.txt
+*/
 
 package org.easetech.easytest.codegen;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +28,7 @@ import com.sun.javadoc.PackageDoc;
 import com.sun.javadoc.RootDoc;
 
 /**
- * An extension of {@link Doclet} for the EasyTest code generataion. 
+ * An extension of {@link Doclet} for the EasyTest code generation. 
  * This class's start() is first invoked when javadoc task is executed.
  * javadoc parses the source java classes from the input package directory and pass it to this customised Doclet.
  * This class is responsible for generating JUnit test cases in EasyTest/Customised template.
@@ -36,7 +45,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
      * An instance of logger associated.
      */
     protected static final Logger LOG = LoggerFactory.getLogger(JUnitDoclet.class);
-  
+	
 	protected static final String OPTION_INPUT_DIR    = "-sourcepath";
     protected static final String OPTION_OUTPUT_DIR   = "-d";
     protected static final String OPTION_PROPERTIES   = "-properties";
@@ -317,7 +326,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         return returnValue;
     }
 
-    public boolean processPackage(PackageDoc[] docs, int index, DocErrorReporter reporter) {
+    public boolean processPackage( TestSuiteVO testSuiteVO, int index, DocErrorReporter reporter) {
     	
     	LOG.info("processPackage started, index:"+index);
     	
@@ -332,15 +341,19 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         writing           = getWritingStrategy();
         naming            = getNamingStrategy();
 
-        if (testing.isTestablePackage(docs[index], naming)) {
+        if (testing.isTestablePackage(testSuiteVO.getPackageDocs()[index], naming)) {
 
-            fullTestSuiteName = naming.getFullTestSuiteName(docs[index].name());
+            fullTestSuiteName = naming.getFullTestSuiteName(testSuiteVO.getPackageDocs()[index].name());
             oldCode = writing.loadClassSource(getOutputRoot(), fullTestSuiteName);
 
 
             if ((oldCode == null) || testing.isValid(oldCode.toString())) {
                 newCode     = new StringBuffer();
-                returnValue = testing.codeTestSuite(docs, index, naming, newCode, testing.getProperties());
+                testSuiteVO.setNaming(naming);
+                testSuiteVO.setNewCode(newCode);
+                testSuiteVO.setProperties(testing.getProperties());
+                System.out.println("testSuiteVO.getTestClasses():"+testSuiteVO.getTestClasses());
+                returnValue = testing.codeTestSuite(testSuiteVO, index);
                 if (testing.isValid(newCode.toString())) {
                     writing.indent(newCode);
 
@@ -363,7 +376,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         return returnValue;
     }
 
-    public boolean processClass(ClassDoc doc, PackageDoc packageDoc, DocErrorReporter reporter) {
+    public boolean processClass(ClassDoc doc, PackageDoc packageDoc, DocErrorReporter reporter, TestSuiteVO testSuiteVO) {
     	
     	LOG.info("processClass started, ClassDoc:"+doc);
     	
@@ -418,9 +431,11 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                             String testPackageName = fullTestCaseName.substring(0, fullTestCaseName.lastIndexOf("."));
                             //check the property overwrite converters, if yes then only generate the converters code
                             String overwriteConverters = testCaseVO.getProperties().getProperty(OVERWRITE_EXISTING_CONVERTERS);
-                            writing.writeConverterSources(getOutputRoot(),testPackageName,convertersMap,overwriteConverters);                            
+                            writing.writeConverterSources(getOutputRoot(),testPackageName,convertersMap,overwriteConverters);
+                            testSuiteVO.getTestClasses().add(fullTestCaseName);
                         } else {
                             reporter.printNotice("TestCase "+fullTestCaseName+ " did not change but "+fullClassName+" did.");
+                            
                         }
                     } else {
                         reporter.printError("Could not generate TestCase "+fullTestCaseName+ " (possible reason: missing or wrong properties).");
@@ -516,28 +531,97 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
 
         if (reporter != null) {
             reporter.printNotice("Generating TestSuites and TestCases.");
-
+            packageDocs = doc.specifiedPackages();            
+            TestSuiteVO testSuiteVO = new TestSuiteVO(packageDocs,new ArrayList<String>());
+            
             classDocs = doc.specifiedClasses();
 
             for (int i = 0; i < classDocs.length; i++) {
-                returnValue = returnValue && processClass(classDocs[i], null, reporter);
-            }
-
-            packageDocs = doc.specifiedPackages();
-
+            	LOG.debug("specifiedClasses processing");
+                returnValue = returnValue && processClass(classDocs[i], null, reporter,testSuiteVO);
+            }           
+            
+            
+            LOG.debug("specifiedPackages processing");
             for (int i = 0; i < packageDocs.length; i++) {
-                classDocs = packageDocs[i].ordinaryClasses();
+            	returnValue = returnValue && processPackageClasses(packageDocs[i],testSuiteVO,reporter);
+                returnValue = returnValue && processPackage(testSuiteVO, i, reporter);
+                
+            
+            	String packageDocSpecified = packageDocs[i].name().replace('.', '/');
+                File file = new File(getSourcePath(),packageDocSpecified);
+                LOG.debug("packageDocSpecified"+packageDocSpecified);            
+                LOG.debug("specified package/file name:"+file.getAbsolutePath());            
+                
+                if(file.isDirectory()){
+                	
+                	File[] packagesAndClasses = file.listFiles();
+                	LOG.debug("packagesAndClasses:"+packagesAndClasses.length);
+                	for(File packagesOrClass:packagesAndClasses){
+                		LOG.debug("packagesOrClass:"+packagesOrClass);
+                		if(packagesOrClass.isDirectory()){
+                			//System.out.println("processing this package through javadoc execute:"+packagesOrClass);
+                			String subPackage = packageDocs[i].name()+"."+packagesOrClass.getName();
+                			LOG.debug("processing this subPackage :"+subPackage);
+                			/*PackageDoc subPackageDoc = doc.packageNamed(subPackage);
+                			System.out.println("subPackageDoc:"+subPackageDoc.name());
+                			ClassDoc[] allClasses = subPackageDoc.allClasses();
+                			System.out.println("allClasses size"+allClasses.length);
+                			System.out.println("subPackageDoc is packageDoc"+subPackageDoc.commentText());
+                			PackageDoc[] subPackageDocs = new PackageDoc[1];
+                			subPackageDocs[0] = subPackageDoc;
+                			TestSuiteVO testSubPackageSuiteVO = new TestSuiteVO(subPackageDocs,new ArrayList<String>());
+                			returnValue = returnValue && processPackageClasses(subPackageDoc, testSubPackageSuiteVO, reporter);
+                			returnValue = returnValue && processPackage(testSubPackageSuiteVO, 0, reporter);
+                			*/
+                			LOG.debug("processing this subPackage through javadoc execute:"+subPackage);
+                			String[] javadocargs = {subPackage,"-d", getOutputRoot(),
+                								  "-sourcepath", getSourcePath(),
+                								  "-doclet", "org.easetech.easytest.codegen.JUnitDoclet",
+                								  "-properties",getPropertyFileName(),
+                								  "-seedData",getSeedDataFileName()};
+                			int returnIntValue = com.sun.tools.javadoc.Main.execute(javadocargs);
+                			LOG.debug("returnIntValue"+returnIntValue);
+                			if(returnIntValue >= 0){
+                				returnValue = returnValue && true;
+                			} else {
+                				returnValue = returnValue && false;
+                			}
 
-                for (int j = 0; j < classDocs.length; j++) {
-                    returnValue = returnValue && processClass(classDocs[j], packageDocs[i], reporter);
+                		}
+                		
+                	}
                 }
-                returnValue = returnValue && processPackage(packageDocs, i, reporter);
+
             }
+            
+            
+            
         }
         return returnValue;
     }
 
-    protected DocErrorReporter createErrorReporter(boolean strict) {
+    private boolean processPackageClasses(PackageDoc packageDoc, TestSuiteVO testSuiteVO,
+			DocErrorReporter reporter) {
+    	System.out.println("processPackageClasses started");
+    
+    	ClassDoc[] classDocs;
+    	boolean returnValue = true;
+    	
+    	classDocs = packageDoc.ordinaryClasses();
+    	System.out.println("No.of class docs"+classDocs.length);
+        for (int j = 0; j < classDocs.length; j++) {
+        	System.out.println("processClass started for"+classDocs[j].name());
+            returnValue = returnValue && processClass(classDocs[j], packageDoc, reporter,testSuiteVO);
+        }           
+        
+        System.out.println("processPackageClasses finished with value"+returnValue);
+        
+       return returnValue;
+
+	}
+
+	protected DocErrorReporter createErrorReporter(boolean strict) {
         DocErrorReporter result;
 
         result = new StrictDocErrorReporter(strict);
@@ -789,4 +873,3 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         this.strict = strict;
     }
 }
-
