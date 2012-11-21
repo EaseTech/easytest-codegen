@@ -9,6 +9,8 @@
 package org.easetech.easytest.codegen;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
 * An interface for writing the generated test cases, converter classes, test data to the respective files 
