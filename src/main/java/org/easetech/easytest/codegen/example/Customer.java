@@ -1,4 +1,4 @@
-package org.easetech.easytest.codegen.example.dto;
+package org.easetech.easytest.codegen.example;
 
 /**
  * This is example customer class to check codegen
