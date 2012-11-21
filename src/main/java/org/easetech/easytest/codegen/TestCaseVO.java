@@ -16,7 +16,7 @@ import com.sun.javadoc.PackageDoc;
 
 public class TestCaseVO {
 
-  /** a Map with converter class names and its code */
+	/** a Map with converter class names and its code */
 	private Map<String, StringBuffer> convertersMap;
 	
 	/** testData for all the test case methods, testcase method name as 
@@ -167,4 +167,3 @@ public class TestCaseVO {
 	}
 	
 }
-
