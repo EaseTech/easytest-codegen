@@ -2,15 +2,13 @@
     This file is part of  EasyTest CodeGen, a project to generate 
     JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
     during refactoring.
-   EasyTest CodeGen, a tool provided by
+ 	EasyTest CodeGen, a tool provided by
 	EaseTech Organization Under Apache License 2.0 
 	http://www.apache.org/licenses/LICENSE-2.0.txt
 */
 package org.easetech.easytest.codegen;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 /**
 * An interface for writing the generated test cases, converter classes, test data to the respective files 
@@ -37,7 +35,8 @@ public interface IWritingStrategy extends IConfigurableStrategy {
 			String packageName, Map<String, StringBuffer> convertersMap, String overwriteConverters);
 	
 	 public StringBuffer loadSourceClassSource(String fullClassName, String path);
+
+	public String translateClassNameToFileName(String name);
     
 
 }
-
