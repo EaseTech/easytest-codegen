@@ -1,5 +1,10 @@
-package org.easetech.easytest.codegen.example;
+package org.easetech.easytest.codegen.example.dto;
 
+/**
+ * This is example customer class to check codegen
+ * @author polamper
+ *
+ */
 public class Customer
 {
     private String _name;
@@ -11,7 +16,7 @@ public class Customer
     }
     
     public Customer () {
-      super();
+        super();
     	_name = "defaultName";
     	_zip = 12345;
     }
