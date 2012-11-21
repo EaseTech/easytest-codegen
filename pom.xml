@@ -10,7 +10,7 @@
 
   <groupId>org.easetech</groupId>
   <artifactId>easytest-codegen</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.3.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>easytest-codegen</name>
@@ -18,7 +18,7 @@
    
     <developers>
        <developer>
-        <id>ravipolampelli</id>
+	       <id>ravipolampelli</id>
 	       <name>Ravi Polampelli</name>
 	       <email>ravi.polampelli@gmail.com</email>       
     	</developer>
@@ -72,8 +72,7 @@
                   <property name="example.src.dir" value="src/main/java"/>
 	              <property name="package.name" value="org.easetech.easytest.codegen.example"/>
 		          <property name="output.dir" value="src/test/java"/>
-
-				    <mkdir dir="${output.dir}" />
+				   <mkdir dir="${output.dir}" />
                    <javadoc
 			            packagenames    = "${package.name}"
 			            sourcepath      = "${example.src.dir}"
@@ -81,7 +80,7 @@
 			            failonerror     = "yes"
 			            doclet          = "org.easetech.easytest.codegen.JUnitDoclet"
 			            docletpathref   = "maven.compile.classpath"
-			            additionalparam = "-d ${output.dir} -seedData seed_data.properties -buildall">
+			            additionalparam = "-d ${output.dir} -seedData seed_data2.properties -buildall">
 			
 			            <classpath refid = "maven.compile.classpath" />
 			        </javadoc>
@@ -181,8 +180,8 @@
         </dependency>
         <dependency>
             <groupId>org.easetech</groupId>
-    		<artifactId>easytest</artifactId>  
-            <version>0.5.0-SNAPSHOT</version>
+    		<artifactId>easytest-core</artifactId>  
+            <version>0.7.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.visaeu.rcs.application.testframework.app</groupId>
