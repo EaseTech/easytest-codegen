@@ -70,7 +70,16 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         super.init();
         setProperties(null);
     }
-
+    
+    /**
+     * 
+     * Checks if package that is encapsulated in package doc is testable 
+     * It mainly checks if PackageDoc name is test package name.
+     * 
+     * @param doc the package doc
+     * @param naming naming strategy object, used to find out test package name
+     */
+    
     public boolean isTestablePackage(PackageDoc doc, INamingStrategy naming) {
 
         boolean returnValue;
@@ -81,6 +90,16 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return returnValue;
     }
 
+    /**
+     * 
+     * Checks if class that is encapsulated in class doc is testable 
+     * It mainly checks if class is not abstract, interface, protected, private, annotated, enum or itself is test etc...
+     * not a suite method
+     * and it is a public class
+     * 
+     * @param doc the class doc
+     * @param naming naming strategy object, used to find out test class name
+     */
     public boolean isTestableClass(ClassDoc doc, INamingStrategy naming) {
 
         boolean  returnValue;
@@ -101,6 +120,15 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return returnValue;
     }
 
+    /**
+     * 
+     * Checks if method that is encapsulated in method doc is testable 
+     * It mainly checks if method is not abstract,  protected, private, annotated, enum const
+     * It is a public method
+     * 
+     * @param doc the class doc
+     * @param naming naming strategy object, used to find out test class name
+     */
     public boolean isTestableMethod(MethodDoc doc) {
 
         boolean returnValue;
@@ -115,7 +143,20 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 
         return returnValue;
     }
-
+    
+  
+    /**
+     * 
+     * Generates test suite code  
+     * It gets the test suite properties (sub package test suites, test classes, suite name etc..)
+     * and loads the required template part and apply the test suite properties on this template
+     * to get the actual test suite code 
+     * 
+     * @param testSuiteVO the test suite value object 
+     * @param indexPackage this is index of PackageDoc of PackageDoc array contained 
+     * in testSuiteVO for which test suit to be generated.
+     */
+    
     public boolean codeTestSuite(TestSuiteVO testSuiteVO,int indexPackage) {
 
         LOG.info("codeTestSuite started");
@@ -138,12 +179,11 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
                 addProps = getTestSuiteProperties(testSuiteVO,indexPackage);
                 template = getTemplate(addProps, "testsuite", addProps.getProperty(TEMPLATE_NAME));
                 
-                if(addProps.getProperty(TESTSUITE_ADD_TESTCASES)!=null && 
-                		!"".equals(addProps.getProperty(TESTSUITE_ADD_TESTCASES))) {
+                if(isTestSuiteExist(addProps) || isTestCaseExist(addProps)) {
                 	testSuiteVO.getNewCode().append(StringHelper.replaceVariables(template, addProps));                
                 } else {
-                	System.out.println("There are no test classes for your preference " +
-                			"in this suite hence no test suite will be generated:"+packageDocs[indexPackage].name()); 
+                	LOG.info("There are no test classes for your preference " +
+                			"in this suite hence no test suite will be generated:"+packageDocs[indexPackage].name());  
                 }
             } // no else
         } else {
@@ -153,7 +193,36 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return returnValue;
     }
 
-    public boolean codeTestCase(TestCaseVO testCaseVO) {
+    private boolean isTestCaseExist(Properties addProps) {
+    	boolean isTestCaseExist = false;
+    	
+    	if(addProps.getProperty(TESTSUITE_ADD_TESTCASES)!=null && 
+        		!"".equals(addProps.getProperty(TESTSUITE_ADD_TESTCASES))){
+    		isTestCaseExist = true;
+    	}
+		return isTestCaseExist;
+	}
+
+	private boolean isTestSuiteExist(Properties addProps) {
+    	boolean isTestSuiteExist = false;
+    	
+    	if(addProps.getProperty(TESTSUITE_ADD_TESTSUITES)!=null && 
+        		!"".equals(addProps.getProperty(TESTSUITE_ADD_TESTSUITES))){
+    		isTestSuiteExist = true;
+    	}
+		return isTestSuiteExist;
+	}
+	
+    /**
+     * 
+     * Generates test class/case code  
+     * It gets the test case properties (test methods, parameters, names etc..)
+     * and loads the required template part then apply the test case properties on this template
+     * to get the actual test class/case code 
+     * 
+     * @param testCaseVO the test case value object
+     */
+	public boolean codeTestCase(TestCaseVO testCaseVO) {
 
     	LOG.info("codeTestCase started");
     	boolean    returnValue;
@@ -172,7 +241,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
             returnValue = isTestableClass(classDoc, testCaseVO.getNaming());
 
             if (returnValue) {    // test this class
-            	//Map<String, List<Map<String, Object>>> testData = new HashMap<String, List<Map<String, Object>>>();                
+            	                
                 addProps = getTestCaseProperties(testCaseVO);
                 template = getTemplate(addProps, "testcase", addProps.getProperty(TEMPLATE_NAME));
                 LOG.debug("getTestCaseProperties:"+addProps);
@@ -192,7 +261,20 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         LOG.info("codeTestCase finished,returnValue:"+returnValue);
         return returnValue;
     }
-
+	
+    /**
+     * 
+     * Generates test method code in a test class  
+     * It gets the test method properties (parameters, types, return types, names etc..)     * 
+     * and loads the required template part then apply the test method properties on this template
+     * to get the actual test method code 
+     * There are two templates used
+     * 1) void return types
+     * 2) non-void return types - this is introduced to capture the result/output data from test method
+     * 
+     * @param testCaseVO the test case value object
+     * @param testMethodVO the test case value object
+     */
     public boolean codeTest(TestCaseVO testCaseVO, TestMethodVO testMethodVO,int index) {
     	MethodDoc[] methodDocs = testMethodVO.getMethodDocs();
     	LOG.info("codeTest started,index:"+index+methodDocs[index].name());
@@ -240,7 +322,16 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return returnValue;
     }
     
-
+    /**
+     * Gets test suite properties, sub pcakge test suites, test classes of this package:<br>
+     * \@pre fields of test case vo (classDoc != null) && (packageDoc != null) && (naming != null) && (properties != null) <br>
+     * \@post return != null <br>
+     * @param sourceCode 
+     * @param filterProperties 
+     *
+     * @return new Properties instance with all properties for parameter 'properties'
+     *         and test case specific properties
+     */
 	public Properties getTestSuiteProperties(TestSuiteVO testSuiteVO, int indexPackage) {
 
         Properties returnValue = new Properties(testSuiteVO.getProperties());
@@ -250,17 +341,16 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         returnValue.setProperty(TEMPLATE_NAME, TEMPLATE_ATTRIBUTE_DEFAULT);
         returnValue.setProperty(TESTSUITE_ADD_TESTSUITES, getTestSuiteAddTestSuites(testSuiteVO,indexPackage));
         returnValue.setProperty(TESTSUITE_ADD_TESTCASES, getTestSuiteAddTestCases(testSuiteVO,indexPackage));
-        returnValue.setProperty(TESTSUITE_IMPORTS, getTestSuiteImports(testSuiteVO,indexPackage));
+        returnValue.setProperty(TESTSUITE_IMPORTS, getTestSuiteImports(testSuiteVO));
         returnValue.setProperty(PACKAGE_NAME, testSuiteVO.getPackageDocs()[indexPackage].name());
         return returnValue;
     }
 
     /**
-     * Comment on DBC:<br>
-     * \@pre (classDoc != null) && (packageDoc != null) && (naming != null) && (properties != null) <br>
+     * Gets test case properties, test methods, registers for converters and editors:<br>
+     * \@pre fields of test case vo (classDoc != null) && (packageDoc != null) && (naming != null) && (properties != null) <br>
      * \@post return != null <br>
-     * @param sourceCode 
-     * @param filterProperties 
+     * @param testCaseVO
      *
      * @return new Properties instance with all properties for parameter 'properties'
      *         and test case specific properties
@@ -277,17 +367,22 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         //List of imports to be added to test case
         Set<String> importsSet = new HashSet<String>();
         TestMethodVO testMethodVO = new TestMethodVO(null,returnValue,importsSet,null,null);
+        // Gets all the test methods of the test case
         returnValue.setProperty(TESTCASE_TESTMETHODS, getTestMethods(testCaseVO, testMethodVO));
         returnValue = testMethodVO.getProperties();
         returnValue.setProperty(TESTCASE_METHOD_UNMATCHED, VALUE_METHOD_UNMATCHED_NAME);
         returnValue.setProperty(TEMPLATE_NAME, TEMPLATE_ATTRIBUTE_DEFAULT);
         returnValue.setProperty(PACKAGE_NAME, testCaseVO.getPackageDoc().name());
         returnValue.setProperty(CLASS_NAME, testCaseVO.getClassDoc().name());
+        //test data file path, the path will be same as test class, the actual location (root folder) may be different
         String testDataFilePath = StringHelper.getFilePath(returnValue.getProperty(TESTCASE_PACKAGE_NAME),
         													returnValue.getProperty(TESTCASE_CLASS_NAME));        
         returnValue.setProperty(TESTCASE_DATA_FILE_PATH, testDataFilePath);
+        //gets the converter registers to be added in test class @BeforeClass method
         returnValue.setProperty(TESTCASE_REGISTER_CONVERTERS, getConverterRegisters(returnValue,testCaseVO.getConvertersMap()));
-    	returnValue.setProperty(TESTCASE_REGISTER_EDITORS, getEditorRegisters(returnValue,testCaseVO.getConvertersMap()));
+    	
+      //gets the editor registers to be added in test class @BeforeClass method
+        returnValue.setProperty(TESTCASE_REGISTER_EDITORS, getEditorRegisters(returnValue,testCaseVO.getConvertersMap()));
 
         returnValue.setProperty(TESTCASE_IMPORTS, codeImports(returnValue,testMethodVO.getImportsSet()));
         
@@ -559,7 +654,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
                 
                 Type returnType = methodDocs[index].returnType();
                 if(returnType != null ){
-                	returnValue.setProperty(METHOD_RETURNTYPE, returnType.simpleTypeName());
+                	returnValue.setProperty(METHOD_RETURNTYPE, getReturnTypeName(returnType));
                 	//if return type is not simple type, then add that in test case imports list
                 	if(!isSimpleType(returnType)) {
                 		testMethodVO.getImportsSet().add(returnType.qualifiedTypeName());
@@ -576,32 +671,45 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
     
     
     
-    private void codeConvertersAndEditors(Properties returnValue, Type type,
+    private String getReturnTypeName(Type returnType) {
+		String returnTypeName = returnType.simpleTypeName();
+		if(returnType.dimension() != null && 
+				returnType.dimension().equals("[]")){
+			returnTypeName = returnTypeName.concat("[]");
+			
+		}
+		return returnTypeName;
+	}
+
+	private void codeConvertersAndEditors(Properties returnValue, Type type,
 			TestCaseVO testCaseVO,
 			Map<String, Object> data, String parameterName, 
 			TestMethodVO testMethodVO,List<String> mandatoryFields) {
     	LOG.debug("codeConvertersAndEditors started :"+type.qualifiedTypeName());
     	LOG.debug("isSimpleType:"+isSimpleType(type));
     	LOG.debug("isTypeEditor:"+isTypeEditor(type));
-    	if(isSimpleType(type) || isJavaDateType(type)){
+    	if(isSimpleType(type) || isJavaDateType(type) || type.asClassDoc().isEnum()){
     		Object defaultObject = getDefaultObjValue(type);    		
             data.put(parameterName, defaultObject);
             mandatoryFields.add(parameterName);
-    	} else if(isTypeEditor(type) && 
+    	} 
+    	//commenting editors
+    	/*else if(isTypeEditor(type) && 
     			!testCaseVO.getConvertersMap().containsKey(type.typeName()+EDITOR_CLASS_NAME_SUFFIX)){
     		LOG.debug("Type requires Editor:"+type.qualifiedTypeName());
     		codeEditors(returnValue,type,testCaseVO,testMethodVO);
     		// TODO check parameter type and add default values of that type
     		data.put(parameterName, "defaultString");
     		mandatoryFields.add(parameterName);
-    	} else if(!testCaseVO.getConvertersMap().containsKey(type.typeName()+CONVERTER_CLASS_NAME_SUFFIX)){
+    	} */ 
+    	else if(!testCaseVO.getConvertersMap().containsKey(type.typeName()+CONVERTER_CLASS_NAME_SUFFIX)){
     		LOG.debug("Type is not primitive, String:"+type.qualifiedTypeName());
     		codeConverterClasses(returnValue,type,parameterName,testCaseVO,data,testMethodVO,mandatoryFields);
     		//setting complex parameter type in method data
     		//following method gets all fields in side that complex type and add it to method data map
     		//setTypeFieldsInMethodData(returnValue,type,data);
     	} else {
-    		LOG.debug("Type is not matched with any condition:"+isTypeEditor(type));
+    		LOG.debug("Type is not matched with any condition:"+type.qualifiedTypeName());
     	}
     	LOG.debug("codeConvertersAndEditors setter data:"+data);
     	LOG.debug("codeConvertersAndEditors finished :"+type.qualifiedTypeName());
@@ -658,9 +766,6 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
     	if(isTypeJodaDateTime(type)){
     		String template = getTemplate(returnValue, "editor", "setvaluejodadatetime");
     		editorSetValue = StringHelper.replaceVariables(template, returnValue);
-    	} else if(isTypeEnum(type)){
-    		String template = getTemplate(returnValue, "editor", "setvalueenum");
-    		editorSetValue = StringHelper.replaceVariables(template, returnValue);
     	} 
     	returnValue.setProperty(EDITOR_SETVALUE, editorSetValue);
 
@@ -684,7 +789,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 
     	returnValue.setProperty(CONVERTER_CLASS_NAME, type.typeName()+CONVERTER_CLASS_NAME_SUFFIX);
     	returnValue.setProperty(CONVERTER_INSTANCE_TYPE, type.typeName());
-    	returnValue.setProperty(CONVERTER_INSTANCE_NAME, type.typeName().toLowerCase());
+    	returnValue.setProperty(CONVERTER_INSTANCE_NAME, getInstanceNameForTypeName(type.typeName()));
     	Set<String> converterImportsSet = new HashSet<String>();
     	returnValue.setProperty(CONVERTER_SETTERS, codeConverterSetters(type,parameterName,returnValue,data,testCaseVO,
     													testMethodVO,converterImportsSet,mandatoryFields));
@@ -699,6 +804,10 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         LOG.debug("codeConverterClasses finished :"+type.qualifiedTypeName());
 	}
 
+	private String getInstanceNameForTypeName(String typeName) {
+		return typeName.substring(0,1).toLowerCase()+typeName.substring(1);
+	}
+
 	private String codeConverterSetters(Type type,String parameterName,
 			Properties returnValue,Map<String, Object> data, 
 			TestCaseVO testCaseVO, TestMethodVO testMethodVO, Set<String> converterImportsSet,List<String> mandatoryFields) {
@@ -706,11 +815,14 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 		StringBuffer setterCode = new StringBuffer();
 		ClassDoc typeClassDoc = type.asClassDoc();
     	FieldDoc[] typeFields = typeClassDoc.fields(false);
-        String templateStringConverter = getTemplate(returnValue, "converter", "setmethodstring");
-        String templateOtherConverter = getTemplate(returnValue, "converter", "setmethodother");
+
+
+        String templatePrimitiveConverter = getTemplate(returnValue, "converter", "setmethodprim");
+        String templateNonPrimConverter = getTemplate(returnValue, "converter", "setmethodnonprim");
         String templateEditorConverter = getTemplate(returnValue, "converter", "setmethodeditor");
-        //String templateConverterSetter = getTemplate(returnValue, "converter", "setmethodconverter");
-        LOG.debug("template:"+templateStringConverter);
+        String templateConverterSetter = getTemplate(returnValue, "converter", "setmethodconverter");
+        String templateNoConverterSetter = getTemplate(returnValue, "converter", "setmethodnoconverter");
+        //LOG.debug("template:"+templateStringConverter);
         LOG.debug("typeFields length"+typeFields.length);
         converterImportsSet.add(type.qualifiedTypeName());
         for(int i=0;i<typeFields.length;i++){
@@ -729,18 +841,20 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         	LOG.debug("typeFields[i].isOrdinaryClass():"+typeFields[i].isOrdinaryClass());
         	LOG.debug("fieldType.dimension():"+fieldType.dimension());
         	
-        	if(isSimpleType(fieldType) || isJavaDateType(fieldType)) {
+        	
+        	if(isSimpleType(fieldType) || isJavaDateType(fieldType) || isTypeEnum(fieldType)) {
 	        	LOG.debug("typeFields[i].name():"+typeFields[i].name());
 	        	returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_SETTER_NAME,fieldSetterName);
 	        	returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_TYPE, fieldType.simpleTypeName());
 	        	returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_NAME, typeFields[i].name());
 
 	        	//typeFields[i].
-	        	if(fieldType.qualifiedTypeName().equals("java.lang.String")){
-	        		setterCode.append(StringHelper.replaceVariables(templateStringConverter, returnValue));
+	        	if(fieldType.isPrimitive() || isTypeEnum(fieldType)){
+	        		returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_TYPE_WRAPPER, getTypeBoxName(fieldType.simpleTypeName()));
+	        		setterCode.append(StringHelper.replaceVariables(templatePrimitiveConverter, returnValue));
 	        	} else {
-	        		returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_CONVERTERUTILMETHOD, getConverterUtilMethodName(fieldType.qualifiedTypeName()));
-	        		setterCode.append(StringHelper.replaceVariables(templateOtherConverter, returnValue));
+	        		
+	        		setterCode.append(StringHelper.replaceVariables(templateNonPrimConverter, returnValue));
 	        	}
 	        	Object defaultObject = getDefaultObjValue(fieldType);
 	        	data.put(typeFields[i].name(), defaultObject);
@@ -750,7 +864,9 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 	        	if(!isSimpleType(fieldType)){
 	        		converterImportsSet.add(fieldType.qualifiedTypeName());	
 	        	}
-        	} else if(isTypeEditor(fieldType)){
+        	} 
+        	//commenting editor code now
+        	/*else if(isTypeEditor(fieldType)){
         		if( !testCaseVO.getConvertersMap().containsKey(fieldType.typeName()+EDITOR_CLASS_NAME_SUFFIX)){
             		LOG.debug("Type requires Editor:"+fieldType.qualifiedTypeName());
             		codeEditors(returnValue,fieldType,testCaseVO,testMethodVO);
@@ -771,21 +887,36 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 	        		mandatoryFields.add(typeFields[i].name());
 	        	}
 	        	
-        	} else {
+        	}*/
+        	
+        	else {
         		//this field is of complex type, hence need to create a converter and set the value
         		//check if converter exist for this complex type, otherwise create it.
-        		/*if( !convertersMap.containsKey(fieldType.typeName()+CONVERTER_CLASS_NAME_SUFFIX)){
-            		LOG.debug("Type requires converter:"+fieldType.qualifiedTypeName());
+        		if(testCaseVO.getConvertersMap().containsKey(fieldType.typeName()+CONVERTER_CLASS_NAME_SUFFIX)){
+        			LOG.debug("set the converter of:"+typeFields[i].name());
+            		returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_SETTER_NAME, fieldSetterName);
+    	        	returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_CONVERTER, typeName+CONVERTER_CLASS_NAME_SUFFIX);
+    	        		        	
+    	        	setterCode.append(StringHelper.replaceVariables(templateConverterSetter, returnValue));
+    	        	converterImportsSet.add(fieldType.qualifiedTypeName());
+    	        	
+            		
+        		} else {
+        			LOG.debug("set the converter of:"+typeFields[i].name());
+            		returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_SETTER_NAME, fieldSetterName);
+    	        	returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_CONVERTER, typeName+CONVERTER_CLASS_NAME_SUFFIX);
+    	        		        	
+    	        	setterCode.append(StringHelper.replaceVariables(templateNoConverterSetter, returnValue));
+    	        	
+        			// TODO : need to create converters.
+        			/*
+        			LOG.debug("Type requires converter:"+fieldType.qualifiedTypeName());
             		Properties properties = new Properties(returnValue);
             		//using recursion if field type is complex
             		codeConvertersAndEditors(properties,fieldType,convertersMap,data,typeFields[i].name(),importsSet);
-        		}
-        		LOG.debug("set the converter of:"+typeFields[i].name());
-        		returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_SETTER_NAME, fieldSetterName);
-	        	returnValue.setProperty(CONVERTER_INSTANCE_ATTRIBUTE_CONVERTER, typeName+CONVERTER_CLASS_NAME_SUFFIX);
-	        		        	
-	        	setterCode.append(StringHelper.replaceVariables(templateConverterSetter, returnValue));
-	        	converterImportsSet.add(fieldType.qualifiedTypeName());*/
+            		*/
+        			
+        		}       		
         		
         	}
         }
@@ -796,6 +927,19 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 	}
 
 
+
+	private boolean isTypeEnum(Type fieldType) {
+		boolean isEnum = false;
+
+		if(isSimpleType(fieldType)){
+			isEnum = false;
+		} else if(fieldType.asClassDoc().isEnum() || 
+				fieldType.asClassDoc().isFinal() || 
+				fieldType.asClassDoc().isEnumConstant()) {
+			isEnum = true;
+		}
+		return isEnum;
+	}
 
 	private boolean isMandatory(StringBuffer methodSourceCode, String objectName,String name) {
 		LOG.debug("isMandatory started: objectName"+objectName+", fieldName:"+name);
@@ -902,7 +1046,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
     	if(isJavaDateType(fieldType)) {
     		isTypeEditor = false;
     	} else {
-    		isTypeEditor = isTypeEnum(fieldType) || isTypeJodaDateTime(fieldType);
+    		isTypeEditor = isTypeJodaDateTime(fieldType);
     	}
 		return isTypeEditor;
 	}
@@ -921,21 +1065,15 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 			isSettableField = false;
 		}
 		return isSettableField;
-	}
+	}	
+
 	
-	private boolean isTypeEnum(Type fieldType){
-		//checking enum or constant
-		ClassDoc fieldTypeClassDoc = fieldType.asClassDoc();
-		//need to check if this is right way to check enum
-		return fieldTypeClassDoc.isEnum() || fieldTypeClassDoc.isFinal();
-	}
-	
-	private boolean isTypeJodaDateTime(Type type) {
-		
+	private boolean isTypeJodaDateTime(Type type) {		
 		//checking enum or constant
 		String typeName = type.qualifiedTypeName();
 		return "org.joda.time.DateTime".equals(typeName);
 	}
+	
 	private String getTypeBoxName(String typeName) {
 		String typeBoxName = null;
 		if("int".equals(typeName)){
@@ -990,7 +1128,8 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 			utilMethodName = "convertToCharacter";
 		} 
 		return utilMethodName;
-	}
+	}	
+	
 
 	public String getTestSuiteAddTestSuites(TestSuiteVO testSuiteVO, int indexPackage) {
         StringBuffer sb;
@@ -1006,15 +1145,17 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         templateForLastItem   = getTemplate(testSuiteVO.getProperties(), ADD_TESTSUITE_TO_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT_LAST);
 
         subPackages = getDirectSubPackages(testSuiteVO.getPackageDocs(), indexPackage);
-        for (int i=0; i<subPackages.length; i++) {
-            if( i==subPackages.length-1 && isNotEmpty(templateForLastItem) ) {
+        List<String> testSuiteList = testSuiteVO.getTestSuiteClasses();
+        for (int i=0;i<testSuiteList.size();i++) {
+            if( i==testSuiteList.size()-1 && isNotEmpty(templateForLastItem) ) {
                 template = templateForLastItem;
             } else {
                 template = templateForNormalItem;
             }
-            if (isTestablePackage(subPackages[i], testSuiteVO.getNaming())) {
-                addProps.setProperty(ADD_TESTSUITE_NAME, testSuiteVO.getNaming().getTestSuiteName(subPackages[i].name()));
-                addProps.setProperty(TESTSUITE_PACKAGE_NAME, testSuiteVO.getNaming().getTestPackageName(subPackages[i].name()));
+
+            if (isTestSuiteDirectSubPackage(testSuiteList.get(i),subPackages)) {
+                addProps.setProperty(ADD_TESTSUITE_NAME,testSuiteList.get(i));
+                //addProps.setProperty(TESTSUITE_PACKAGE_NAME, testSuiteVO.getNaming().getTestPackageName(subPackages[i].name()));
                 sb.append(StringHelper.replaceVariables(template, addProps));
             }
         }
@@ -1022,7 +1163,18 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return sb.toString();
     }
 
-    public String getTestSuiteAddTestCases(TestSuiteVO testSuiteVO, int indexPackage) {
+    private boolean isTestSuiteDirectSubPackage(String testSuiteName,
+			PackageDoc[] subPackages) {    	
+    	for(PackageDoc subPackageDoc:subPackages){
+    		if(testSuiteName.contains(subPackageDoc.name())) {
+    			return true;
+    		}    	
+    	}
+
+		return false;
+	}
+
+	public String getTestSuiteAddTestCases(TestSuiteVO testSuiteVO, int indexPackage) {
         StringBuffer sb;
         String template;
         String templateForNormalItem;
@@ -1038,7 +1190,8 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 
         // If there are any testsuites, they are placed behind the testcases.
         // In such case, we never use the template for last testcase (the one without trailing ',').
-        if( getDirectSubPackages(testSuiteVO.getPackageDocs(), indexPackage).length>0 ) {
+        if( isTestSuiteExist(testSuiteVO,indexPackage)) {
+        	
             templateForLastItem = null;
         }
         List<String> testClassNames = testSuiteVO.getTestClasses();
@@ -1051,7 +1204,11 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
                 if(i<testClassNames.size()-1){
                 	sb.append(StringHelper.replaceVariables(templateForNormalItem, addProps));
                 } else {
-                	sb.append(StringHelper.replaceVariables(templateForLastItem, addProps));
+                	if(templateForLastItem!= null) {
+                		sb.append(StringHelper.replaceVariables(templateForLastItem, addProps));
+                	} else {
+                		sb.append(StringHelper.replaceVariables(templateForNormalItem, addProps));
+                	}
                 }
             //}
         }
@@ -1060,23 +1217,28 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
     }
 
 
-	public String getTestSuiteImports(TestSuiteVO testSuiteVO, int indexPackage) {
+	private boolean isTestSuiteExist(TestSuiteVO testSuiteVO, int indexPackage) {
+		String testSuites = getTestSuiteAddTestSuites(testSuiteVO, indexPackage);
+		
+		if(testSuites != null && !"".equals(testSuites)){
+			return true;
+		}
+		return false;
+	}
+
+	public String getTestSuiteImports(TestSuiteVO testSuiteVO) {
         StringBuffer sb;
         String template;
         Properties addProps;
-        PackageDoc[] subPackages;
 
         sb = new StringBuffer();
         addProps = new Properties(testSuiteVO.getProperties());
         template = getTemplate(testSuiteVO.getProperties(), ADD_IMPORT_TESTSUITE, TEMPLATE_ATTRIBUTE_DEFAULT);
-
-        subPackages = getDirectSubPackages(testSuiteVO.getPackageDocs(), indexPackage);
-        for (int i=0; i<subPackages.length; i++) {
-            if (isTestablePackage(subPackages[i], testSuiteVO.getNaming())) {
-                addProps.setProperty(ADD_TESTSUITE_NAME, testSuiteVO.getNaming().getTestSuiteName(subPackages[i].name()));
-                addProps.setProperty(TESTSUITE_PACKAGE_NAME, testSuiteVO.getNaming().getTestPackageName(subPackages[i].name()));
-                sb.append(StringHelper.replaceVariables(template, addProps));
-            }
+        
+        for (String testSuiteName:testSuiteVO.getTestSuiteClasses()) {
+             addProps.setProperty(ADD_TESTSUITE_NAME, testSuiteName);
+             //addProps.setProperty(TESTSUITE_PACKAGE_NAME, testSuiteVO.getNaming().getTestPackageName(subPackages[i].name()));
+             sb.append(StringHelper.replaceVariables(template, addProps));
         }
 
         return sb.toString();
