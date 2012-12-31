@@ -12,5 +12,7 @@ public interface ItemService {
     public List<Item> getItems(LibraryId libraryId, String searchText, String itemType);
 
     public Item findItem(LibraryId libraryId, ItemId itemId);
+    
+    public Item[] findItemArray(Item item);
 
 }
