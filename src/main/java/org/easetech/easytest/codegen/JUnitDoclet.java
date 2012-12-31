@@ -10,7 +10,6 @@
 package org.easetech.easytest.codegen;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -340,6 +339,11 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         testing           = getTestingStrategy();
         writing           = getWritingStrategy();
         naming            = getNamingStrategy();
+        
+        String testSuiteExtention = testing.getProperties().getProperty(TESTSUITE_EXTENSION);
+        if(testSuiteExtention != null && !"".equals(testSuiteExtention)){
+        	naming.setTEST_SUITE_EXT(testSuiteExtention);
+        }
 
         if (testing.isTestablePackage(testSuiteVO.getPackageDocs()[index], naming)) {
 
@@ -361,6 +365,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                         if (isWritingNeeded(newCode, oldCode)) {
                             reporter.printNotice("Writing TestSuite "+fullTestSuiteName+".");
                             writing.writeClassSource(getOutputRoot(), fullTestSuiteName, newCode);
+                            testSuiteVO.getTestSuiteClasses().add(fullTestSuiteName);
                         } // no else
                     } // no else
                 } else {
@@ -397,6 +402,11 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         }
 
         fullClassName    = doc.qualifiedTypeName();
+        String testCaseExtention = testing.getProperties().getProperty(TESTCASE_EXTENSION);
+        if(testCaseExtention != null && !"".equals(testCaseExtention)){
+        	naming.setTEST_CASE_EXT(testCaseExtention);
+        }
+        
         fullTestCaseName = naming.getFullTestCaseName(fullClassName);
 
         if (testing.isTestableClass(doc, naming)) {
@@ -412,7 +422,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                     StringBuffer sourceCode = writing.loadSourceClassSource(fullClassName,getSourcePath());
 
                     Map<String, StringBuffer> convertersMap = new HashMap<String,StringBuffer>();
-                    TestCaseVO testCaseVO = new TestCaseVO(packageDoc, doc,getNamingStrategy(),testing.getProperties(),
+                    TestCaseVO testCaseVO = new TestCaseVO(packageDoc, doc,naming,testing.getProperties(),
                     								convertersMap,new HashMap<String, List<Map<String, Object>>>(),
                     								sourceCode,newCode,new HashMap<String, List<String>>());
                     
@@ -526,34 +536,44 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         PackageDoc[]     packageDocs;
         ClassDoc[]       classDocs;
         DocErrorReporter reporter;
-
+        
         reporter = createErrorReporter(isStrict());
 
         if (reporter != null) {
             reporter.printNotice("Generating TestSuites and TestCases.");
             packageDocs = doc.specifiedPackages();            
-            TestSuiteVO testSuiteVO = new TestSuiteVO(packageDocs,new ArrayList<String>());
             
             classDocs = doc.specifiedClasses();
-
-            for (int i = 0; i < classDocs.length; i++) {
+            TestSuiteVO testSuiteVO = new TestSuiteVO(packageDocs,new ArrayList<String>());
+        	for (int j = 0; j < classDocs.length; j++) {
             	LOG.debug("specifiedClasses processing");
-                returnValue = returnValue && processClass(classDocs[i], null, reporter,testSuiteVO);
-            }           
+                returnValue = returnValue && processClass(classDocs[j], null, reporter,testSuiteVO);
+            }  
             
-            
+        	testSuiteVO.setTestSuiteClasses(new ArrayList<String>());
+        	
             LOG.debug("specifiedPackages processing");
-            for (int i = 0; i < packageDocs.length; i++) {
+            //traversing in reverse direction so that generation of test cases for sub packages(if specified) will happen first
+            //and then goes up in hierarchy till base package.
+            for (int i = packageDocs.length-1; i >= 0; i--) {
+            	
+            	//for sub packages no need to include upper level test cases, hence making them null.
+            	// to create new test suite for sub packages.
+            	//if( i > 0){
+            		testSuiteVO.setTestClasses(new ArrayList<String>());
+            	//}            	 
+
             	returnValue = returnValue && processPackageClasses(packageDocs[i],testSuiteVO,reporter);
                 returnValue = returnValue && processPackage(testSuiteVO, i, reporter);
                 
-            
+                /*
             	String packageDocSpecified = packageDocs[i].name().replace('.', '/');
                 File file = new File(getSourcePath(),packageDocSpecified);
                 LOG.debug("packageDocSpecified"+packageDocSpecified);            
-                LOG.debug("specified package/file name:"+file.getAbsolutePath());            
+                LOG.debug("specified package/file name:"+file.getAbsolutePath());
                 
-                if(file.isDirectory()){
+              
+                if(file.isDirectory() && generateSubpackageTestCases ){
                 	
                 	File[] packagesAndClasses = file.listFiles();
                 	LOG.debug("packagesAndClasses:"+packagesAndClasses.length);
@@ -573,13 +593,19 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                 			TestSuiteVO testSubPackageSuiteVO = new TestSuiteVO(subPackageDocs,new ArrayList<String>());
                 			returnValue = returnValue && processPackageClasses(subPackageDoc, testSubPackageSuiteVO, reporter);
                 			returnValue = returnValue && processPackage(testSubPackageSuiteVO, 0, reporter);
-                			*/
+                			*//*
                 			LOG.debug("processing this subPackage through javadoc execute:"+subPackage);
                 			String[] javadocargs = {subPackage,"-d", getOutputRoot(),
                 								  "-sourcepath", getSourcePath(),
                 								  "-doclet", "org.easetech.easytest.codegen.JUnitDoclet",
                 								  "-properties",getPropertyFileName(),
-                								  "-seedData",getSeedDataFileName()};
+                								  "-classpath","maven.compile.classpath",
+                								  "",""};
+                			if(getSeedDataFileName() != null) {
+                				int arrLen = javadocargs.length;      
+                				Arrays.fill(javadocargs,arrLen-2,arrLen-1,"-seedData");
+                				Arrays.fill(javadocargs,arrLen-1,arrLen,getSeedDataFileName());
+                			}
                 			int returnIntValue = com.sun.tools.javadoc.Main.execute(javadocargs);
                 			LOG.debug("returnIntValue"+returnIntValue);
                 			if(returnIntValue >= 0){
@@ -591,7 +617,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                 		}
                 		
                 	}
-                }
+                }*/
 
             }
             
@@ -603,19 +629,19 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
 
     private boolean processPackageClasses(PackageDoc packageDoc, TestSuiteVO testSuiteVO,
 			DocErrorReporter reporter) {
-    	System.out.println("processPackageClasses started");
+    	LOG.debug("processPackageClasses started");
     
     	ClassDoc[] classDocs;
     	boolean returnValue = true;
     	
     	classDocs = packageDoc.ordinaryClasses();
-    	System.out.println("No.of class docs"+classDocs.length);
+    	LOG.debug("No.of class docs"+classDocs.length);
         for (int j = 0; j < classDocs.length; j++) {
         	System.out.println("processClass started for"+classDocs[j].name());
             returnValue = returnValue && processClass(classDocs[j], packageDoc, reporter,testSuiteVO);
         }           
         
-        System.out.println("processPackageClasses finished with value"+returnValue);
+        LOG.debug("processPackageClasses finished with value"+returnValue);
         
        return returnValue;
 
