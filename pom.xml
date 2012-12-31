@@ -10,7 +10,7 @@
 
   <groupId>org.easetech</groupId>
   <artifactId>easytest-codegen</artifactId>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>easytest-codegen</name>
@@ -70,7 +70,7 @@
                   <echo> Generate JUnit Testcases as for EasyTest template.</echo>
                   
                   <property name="example.src.dir" value="src/main/java"/>
-	              <property name="package.name" value="org.easetech.easytest.codegen.example"/>
+	              <property name="package.name" value="org.easetech.easytest.codegen.example.*"/>
 		          <property name="output.dir" value="src/test/java"/>
 				   <mkdir dir="${output.dir}" />
                    <javadoc
@@ -181,7 +181,7 @@
         <dependency>
             <groupId>org.easetech</groupId>
     		<artifactId>easytest-core</artifactId>  
-            <version>0.7.1-SNAPSHOT</version>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.visaeu.rcs.application.testframework.app</groupId>
