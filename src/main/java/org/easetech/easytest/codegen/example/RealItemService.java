@@ -2,14 +2,13 @@
 package org.easetech.easytest.codegen.example;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import org.easetech.easytest.codegen.example.dto.Item;
 import org.easetech.easytest.codegen.example.dto.ItemId;
 import org.easetech.easytest.codegen.example.dto.LibraryId;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 
 public class RealItemService implements ItemService {
 
@@ -77,5 +76,19 @@ public class RealItemService implements ItemService {
             System.out.println(str);
         }
     }*/
+
+
+    public Item[] findItemArray(Item item) {
+		System.out.println("findItemList Called:"+item);
+        Item[] itemList = new Item[2];
+        Item item2 = new Item();
+        item2.setDescription("Item Description Modified Again");
+        item2.setItemId(item.getItemId()+1);
+        item2.setItemType(item.getItemType());
+        
+        itemList[0] = item;
+        itemList[1] = item2;
+        return itemList;
+	}
 
 }
