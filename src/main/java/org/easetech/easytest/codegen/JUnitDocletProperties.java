@@ -66,6 +66,7 @@ public interface JUnitDocletProperties {
     public final static String TESTCASE_REGISTER_CONVERTERS    = "testcase.register.converters";
     public final static String TESTCASE_REGISTER_EDITORS       = "testcase.register.editors";
     public final static String TESTCASE_IMPORTS			       = "testcase.imports";
+    public final static String TESTCASE_LOADER_TYPE			   = "testcase.loader.type";
    
 
     //
