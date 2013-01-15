@@ -376,7 +376,8 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         returnValue.setProperty(CLASS_NAME, testCaseVO.getClassDoc().name());
         //test data file path, the path will be same as test class, the actual location (root folder) may be different
         String testDataFilePath = StringHelper.getFilePath(returnValue.getProperty(TESTCASE_PACKAGE_NAME),
-        													returnValue.getProperty(TESTCASE_CLASS_NAME));        
+        													returnValue.getProperty(TESTCASE_CLASS_NAME),testCaseVO.getLoaderType());        
+        System.out.println("testDataFilePath"+testDataFilePath);
         returnValue.setProperty(TESTCASE_DATA_FILE_PATH, testDataFilePath);
         //gets the converter registers to be added in test class @BeforeClass method
         returnValue.setProperty(TESTCASE_REGISTER_CONVERTERS, getConverterRegisters(returnValue,testCaseVO.getConvertersMap()));
@@ -385,6 +386,7 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         returnValue.setProperty(TESTCASE_REGISTER_EDITORS, getEditorRegisters(returnValue,testCaseVO.getConvertersMap()));
 
         returnValue.setProperty(TESTCASE_IMPORTS, codeImports(returnValue,testMethodVO.getImportsSet()));
+        returnValue.setProperty(TESTCASE_LOADER_TYPE, testCaseVO.getLoaderType().toString());
         
         LOG.info("getTestCaseProperties finished,returnValue:"+returnValue);
         LOG.debug("testData map at testclass level:"+testCaseVO.getTestData());
