@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.easetech.easytest.loader.LoaderType;
+
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.PackageDoc;
 
@@ -54,7 +56,18 @@ public class TestCaseVO {
 	 * this information is useful for user to check the missing fields data at one place and provide the missing data in seed data file
 	 * */
 	private Map<String, List<String>> testDataMissingFields;
+	
+	/** LoaderType that is associated with this test case */
+	private LoaderType loaderType;
 
+
+	public  LoaderType getLoaderType() {
+		return loaderType;
+	}
+
+	public void setLoaderType(LoaderType loaderType) {
+		this.loaderType = loaderType;
+	}
 
 	public TestCaseVO() {
 		super();
@@ -163,7 +176,8 @@ public class TestCaseVO {
 				+ classDoc + ", packageDoc=" + packageDoc + ", properties="
 				+ properties + ", newCode=" + newCode + ", naming=" + naming
 				+ ", testDataMandatoryFields=" + testDataMandatoryFields
-				+ ", testDataMissingFields=" + testDataMissingFields + "]";
+				+ ", testDataMissingFields=" + testDataMissingFields
+				+ ", loaderType=" + loaderType + "]";
 	}
 	
 }
