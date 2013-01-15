@@ -57,6 +57,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
     protected static final String OPTION_TEST_IN_TEST = "-testintest";
     protected static final String OPTION_STRICT       = "-strict";
     protected static final String OPTION_FILTER_PROPERTIES   = "-filterProperties";
+    protected static final String OPTION_LOADER_TYPE   = "-loaderType";
     protected static final String OPTION_SEED_DATA   = "-seedData";
     /* JunitDoclet can't support looking for source files in class path. See javadoc tools documentation */
 	// default source path must be "" to support filesets, since there no
@@ -115,7 +116,10 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
     private String           testingStrategyName;
     private String           propertyFileName;
     private String           filterPropertyFileName;
-    private String           seedDataFileName;
+    private String           loaderType;
+    
+
+	private String           seedDataFileName;
     private String           subPackage;
     private boolean          buildAll;
     private boolean          testInTest;
@@ -141,6 +145,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         setWritingStrategyName("org.easetech.easytest.codegen.WritingStrategy");
         setTestingStrategyName("org.easetech.easytest.codegen.TestingStrategy");
         setPropertyFileName(ConfigurableStrategy.DEFAULT_PROPERTY_FILE_NAME);
+        setLoaderType(ConfigurableStrategy.DEFAULT_LOADER_TYPE);
         setSeedDataFileName(null);
         setSubPackage(null);
         LOG.info("init finished");
@@ -190,6 +195,14 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         getWritingStrategy().setFilterPropertyFileName(propertyFileName);
         getTestingStrategy().setFilterPropertyFileName(propertyFileName);
 		
+	}
+    
+    public String getLoaderType() {
+		return loaderType;
+	}
+
+	public void setLoaderType(String loaderType) {
+		this.loaderType = loaderType;
 	}
     
     public void setSeedDataFileName(String seedDataFileName) {
@@ -425,6 +438,9 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                     TestCaseVO testCaseVO = new TestCaseVO(packageDoc, doc,naming,testing.getProperties(),
                     								convertersMap,new HashMap<String, List<Map<String, Object>>>(),
                     								sourceCode,newCode,new HashMap<String, List<String>>());
+                    System.out.println("getLoaderType:"+getLoaderType());
+                    
+                    testCaseVO.setLoaderType(StringHelper.getLoaderTypeFromExtension(getLoaderType()));
                     
                     returnValue = testing.codeTestCase(testCaseVO);
                     if (testing.isValid(newCode.toString())) {
@@ -690,6 +706,10 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                 setFilterPropertyFileName(options[i][1]);
             }
             
+            if (options[i][0].equals(OPTION_LOADER_TYPE)) {
+                setLoaderType(options[i][1]);
+            }
+            
             if (options[i][0].equals(OPTION_SEED_DATA)) {
                 setSeedDataFileName(options[i][1]);
             }
@@ -735,6 +755,8 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         } else if (s.equals(OPTION_NAMING)) {
             returnValue = 2;
         } else if (s.equals(OPTION_SEED_DATA)) {
+            returnValue = 2;
+        } else if (s.equals(OPTION_LOADER_TYPE)) {
             returnValue = 2;
         } // no else
 
@@ -792,6 +814,16 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
 
                     if (reporter != null) {
                         reporter.printError("Error:" + parameter[1] + " is not a property file.");
+                    }
+                }
+            }
+            
+            if (parameter[0].equals(OPTION_LOADER_TYPE)) {
+                if (!ValidationHelper.isLoaderTypeName(parameter[1])) {
+                    returnValue = false;
+
+                    if (reporter != null) {
+                        reporter.printError("Error:" + parameter[1] + " is not a valid loader type.");
                     }
                 }
             }
