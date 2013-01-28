@@ -1,10 +1,18 @@
+/*
     This file is part of  EasyTest CodeGen, a project to generate 
+    JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
+    during refactoring.
+ 	EasyTest CodeGen, a tool provided by
+	EaseTech Organization Under Apache License 2.0 
+	http://www.apache.org/licenses/LICENSE-2.0.txt
+*/
 
 package org.easetech.easytest.codegen;
 
 import java.util.Enumeration;
 import java.util.Properties;
 
+import org.easetech.easytest.loader.LoaderType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +23,7 @@ import org.slf4j.LoggerFactory;
 */
 
 public class StringHelper {
-  
+	
     /**
      * An instance of logger associated.
      */
@@ -171,9 +179,50 @@ public class StringHelper {
         System.out.println("StringHelper."+msg);
     }
 
-	public static String getFilePath(String packageName, String className) {
+	public static String getFilePath(String packageName, String className, LoaderType loaderType) {
 		packageName = packageName.replace('.', '/');		
-		return packageName+"/"+className+".xls";
+		return packageName+"/"+className+getFileExtensionName(loaderType);
+	}
+
+	public static String getFileExtensionName(LoaderType loaderType) {
+		String fileExtName = null;
+		System.out.print("loaderType:"+loaderType);
+		switch(loaderType){
+			case EXCEL :
+				fileExtName = ".xls";
+				break;
+			case CSV :
+				fileExtName = ".csv";
+				break;
+			case XML :
+				fileExtName = ".xml";
+				break;
+			case CUSTOM :
+				fileExtName = ".custom";
+				break;
+			default :
+				fileExtName = ".xls";
+				break;
+				
+		}
+		System.out.print("fileExtName:"+fileExtName);
+		return fileExtName;
+	}
+	
+	public static LoaderType getLoaderTypeFromExtension(String extension) {
+		LoaderType loaderType = LoaderType.EXCEL;
+		
+		if("EXCEL".equals(extension)){
+			loaderType = LoaderType.EXCEL;
+		} else if("CSV".equals(extension)){
+			loaderType = LoaderType.CSV;
+		}  else if("XML".equals(extension)){
+			loaderType = LoaderType.XML;
+		} else if("CUSTOM".equals(extension)){
+			loaderType = LoaderType.CUSTOM;
+		}
+		
+		return loaderType;
 	}
 
 	public static String getSetterName(String name) {
@@ -182,4 +231,3 @@ public class StringHelper {
 		return setterName;
 	}
 }
-

@@ -2,7 +2,7 @@
     This file is part of  EasyTest CodeGen, a project to generate 
     JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
     during refactoring.
-   EasyTest CodeGen, a tool provided by
+ 	EasyTest CodeGen, a tool provided by
 	EaseTech Organization Under Apache License 2.0 
 	http://www.apache.org/licenses/LICENSE-2.0.txt
 */
@@ -19,13 +19,32 @@ package org.easetech.easytest.codegen;
 public class NamingStrategy extends ConfigurableStrategy implements INamingStrategy, JUnitDocletProperties {
 
     //
-    private static final String TEST_CASE_EXT         = "Test";
-    private static final String TEST_SUITE_EXT        = "Suite";
-    private static final String TEST_METHOD_PREFIX    = "test";
+    private String TEST_CASE_EXT         = "Test";  
+
+	private String TEST_SUITE_EXT        = "Suite";
+   
+
+	private static final String TEST_METHOD_PREFIX    = "test";
 
     private String cachedDefaultTestSuiteName = null;
     private String subPackage = null;
+    
+    public String getTEST_CASE_EXT() {
+		return TEST_CASE_EXT;
+	}
 
+	public void setTEST_CASE_EXT(String tEST_CASE_EXT) {
+		TEST_CASE_EXT = tEST_CASE_EXT;
+	}
+    
+	public String getTEST_SUITE_EXT() {
+		return TEST_SUITE_EXT;
+	}
+
+	public void setTEST_SUITE_EXT(String tEST_SUITE_EXT) {
+		TEST_SUITE_EXT = tEST_SUITE_EXT;
+	}
+	
     public boolean isTestInTest() {
         return isTestInTest;
     }
@@ -238,5 +257,4 @@ public class NamingStrategy extends ConfigurableStrategy implements INamingStrat
     }
 
 }
-
 

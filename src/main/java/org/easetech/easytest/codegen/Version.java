@@ -2,7 +2,7 @@
     This file is part of  EasyTest CodeGen, a project to generate 
     JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
     during refactoring.
-   EasyTest CodeGen, a tool provided by
+ 	EasyTest CodeGen, a tool provided by
 	EaseTech Organization Under Apache License 2.0 
 	http://www.apache.org/licenses/LICENSE-2.0.txt
 */
@@ -19,4 +19,3 @@ public class Version {
         return "#version.build#";
     }
 }
-

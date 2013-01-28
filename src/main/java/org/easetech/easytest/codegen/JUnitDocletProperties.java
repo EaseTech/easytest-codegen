@@ -2,7 +2,7 @@
     This file is part of  EasyTest CodeGen, a project to generate 
     JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
     during refactoring.
-   EasyTest CodeGen, a tool provided by
+ 	EasyTest CodeGen, a tool provided by
 	EaseTech Organization Under Apache License 2.0 
 	http://www.apache.org/licenses/LICENSE-2.0.txt
 */
@@ -66,6 +66,7 @@ public interface JUnitDocletProperties {
     public final static String TESTCASE_REGISTER_CONVERTERS    = "testcase.register.converters";
     public final static String TESTCASE_REGISTER_EDITORS       = "testcase.register.editors";
     public final static String TESTCASE_IMPORTS			       = "testcase.imports";
+    public final static String TESTCASE_LOADER_TYPE			   = "testcase.loader.type";
    
 
     //
@@ -83,6 +84,8 @@ public interface JUnitDocletProperties {
     public final static String FILTER_EXCLUDE                 = "filter.exclude";
     public final static String OVERWRITE_EXISTING_TEST_DATA   = "overwrite.existing.test.data";
     public final static String OVERWRITE_EXISTING_CONVERTERS   = "overwrite.existing.converters";
+    public final static String TESTCASE_EXTENSION   = "testcase.extension";
+    public final static String TESTSUITE_EXTENSION   = "testsuite.extension";
     
     // variables holding informations about the device under test. (usefull in javadoc)
     public final static String PACKAGE_NAME                    = "package.name";
@@ -144,6 +147,7 @@ public interface JUnitDocletProperties {
     public final static String CONVERTER_INSTANCE_ATTRIBUTE_NAME         = "converter.instance.attribute.name";
     public final static String CONVERTER_INSTANCE_ATTRIBUTE_SETTER_NAME  = "converter.instance.attribute.setter.name";
     public final static String CONVERTER_INSTANCE_ATTRIBUTE_TYPE  = "converter.instance.attribute.type";
+    public final static String CONVERTER_INSTANCE_ATTRIBUTE_TYPE_WRAPPER  = "converter.instance.attribute.type.wrapper";
     public final static String CONVERTER_CLASS_NAME_SUFFIX           = "Converter";
     public final static String CONVERTER_IMPORTS			       = "converter.imports";
     public final static String CONVERTER_INSTANCE_ATTRIBUTE_CONVERTER  = "converter.instance.attribute.converter";
@@ -161,4 +165,3 @@ public interface JUnitDocletProperties {
     public final static String EDITOR_CLASS_NAME_SUFFIX           = "Editor";
 
 }
-

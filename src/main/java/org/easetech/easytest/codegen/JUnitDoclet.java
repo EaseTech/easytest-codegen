@@ -1,9 +1,17 @@
+/*
     This file is part of  EasyTest CodeGen, a project to generate 
+    JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
+    during refactoring.
+ 	EasyTest CodeGen, a tool provided by
+	EaseTech Organization Under Apache License 2.0 
+	http://www.apache.org/licenses/LICENSE-2.0.txt
+*/
 
 package org.easetech.easytest.codegen;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +27,7 @@ import com.sun.javadoc.PackageDoc;
 import com.sun.javadoc.RootDoc;
 
 /**
- * An extension of {@link Doclet} for the EasyTest code generataion. 
+ * An extension of {@link Doclet} for the EasyTest code generation. 
  * This class's start() is first invoked when javadoc task is executed.
  * javadoc parses the source java classes from the input package directory and pass it to this customised Doclet.
  * This class is responsible for generating JUnit test cases in EasyTest/Customised template.
@@ -36,7 +44,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
      * An instance of logger associated.
      */
     protected static final Logger LOG = LoggerFactory.getLogger(JUnitDoclet.class);
-  
+	
 	protected static final String OPTION_INPUT_DIR    = "-sourcepath";
     protected static final String OPTION_OUTPUT_DIR   = "-d";
     protected static final String OPTION_PROPERTIES   = "-properties";
@@ -49,6 +57,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
     protected static final String OPTION_TEST_IN_TEST = "-testintest";
     protected static final String OPTION_STRICT       = "-strict";
     protected static final String OPTION_FILTER_PROPERTIES   = "-filterProperties";
+    protected static final String OPTION_LOADER_TYPE   = "-loaderType";
     protected static final String OPTION_SEED_DATA   = "-seedData";
     /* JunitDoclet can't support looking for source files in class path. See javadoc tools documentation */
 	// default source path must be "" to support filesets, since there no
@@ -107,7 +116,10 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
     private String           testingStrategyName;
     private String           propertyFileName;
     private String           filterPropertyFileName;
-    private String           seedDataFileName;
+    private String           loaderType;
+    
+
+	private String           seedDataFileName;
     private String           subPackage;
     private boolean          buildAll;
     private boolean          testInTest;
@@ -133,6 +145,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         setWritingStrategyName("org.easetech.easytest.codegen.WritingStrategy");
         setTestingStrategyName("org.easetech.easytest.codegen.TestingStrategy");
         setPropertyFileName(ConfigurableStrategy.DEFAULT_PROPERTY_FILE_NAME);
+        setLoaderType(ConfigurableStrategy.DEFAULT_LOADER_TYPE);
         setSeedDataFileName(null);
         setSubPackage(null);
         LOG.info("init finished");
@@ -182,6 +195,14 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         getWritingStrategy().setFilterPropertyFileName(propertyFileName);
         getTestingStrategy().setFilterPropertyFileName(propertyFileName);
 		
+	}
+    
+    public String getLoaderType() {
+		return loaderType;
+	}
+
+	public void setLoaderType(String loaderType) {
+		this.loaderType = loaderType;
 	}
     
     public void setSeedDataFileName(String seedDataFileName) {
@@ -317,7 +338,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         return returnValue;
     }
 
-    public boolean processPackage(PackageDoc[] docs, int index, DocErrorReporter reporter) {
+    public boolean processPackage( TestSuiteVO testSuiteVO, int index, DocErrorReporter reporter) {
     	
     	LOG.info("processPackage started, index:"+index);
     	
@@ -331,16 +352,25 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         testing           = getTestingStrategy();
         writing           = getWritingStrategy();
         naming            = getNamingStrategy();
+        
+        String testSuiteExtention = testing.getProperties().getProperty(TESTSUITE_EXTENSION);
+        if(testSuiteExtention != null && !"".equals(testSuiteExtention)){
+        	naming.setTEST_SUITE_EXT(testSuiteExtention);
+        }
 
-        if (testing.isTestablePackage(docs[index], naming)) {
+        if (testing.isTestablePackage(testSuiteVO.getPackageDocs()[index], naming)) {
 
-            fullTestSuiteName = naming.getFullTestSuiteName(docs[index].name());
+            fullTestSuiteName = naming.getFullTestSuiteName(testSuiteVO.getPackageDocs()[index].name());
             oldCode = writing.loadClassSource(getOutputRoot(), fullTestSuiteName);
 
 
             if ((oldCode == null) || testing.isValid(oldCode.toString())) {
                 newCode     = new StringBuffer();
-                returnValue = testing.codeTestSuite(docs, index, naming, newCode, testing.getProperties());
+                testSuiteVO.setNaming(naming);
+                testSuiteVO.setNewCode(newCode);
+                testSuiteVO.setProperties(testing.getProperties());
+                System.out.println("testSuiteVO.getTestClasses():"+testSuiteVO.getTestClasses());
+                returnValue = testing.codeTestSuite(testSuiteVO, index);
                 if (testing.isValid(newCode.toString())) {
                     writing.indent(newCode);
 
@@ -348,6 +378,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                         if (isWritingNeeded(newCode, oldCode)) {
                             reporter.printNotice("Writing TestSuite "+fullTestSuiteName+".");
                             writing.writeClassSource(getOutputRoot(), fullTestSuiteName, newCode);
+                            testSuiteVO.getTestSuiteClasses().add(fullTestSuiteName);
                         } // no else
                     } // no else
                 } else {
@@ -363,7 +394,7 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         return returnValue;
     }
 
-    public boolean processClass(ClassDoc doc, PackageDoc packageDoc, DocErrorReporter reporter) {
+    public boolean processClass(ClassDoc doc, PackageDoc packageDoc, DocErrorReporter reporter, TestSuiteVO testSuiteVO) {
     	
     	LOG.info("processClass started, ClassDoc:"+doc);
     	
@@ -384,6 +415,11 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         }
 
         fullClassName    = doc.qualifiedTypeName();
+        String testCaseExtention = testing.getProperties().getProperty(TESTCASE_EXTENSION);
+        if(testCaseExtention != null && !"".equals(testCaseExtention)){
+        	naming.setTEST_CASE_EXT(testCaseExtention);
+        }
+        
         fullTestCaseName = naming.getFullTestCaseName(fullClassName);
 
         if (testing.isTestableClass(doc, naming)) {
@@ -399,9 +435,12 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                     StringBuffer sourceCode = writing.loadSourceClassSource(fullClassName,getSourcePath());
 
                     Map<String, StringBuffer> convertersMap = new HashMap<String,StringBuffer>();
-                    TestCaseVO testCaseVO = new TestCaseVO(packageDoc, doc,getNamingStrategy(),testing.getProperties(),
+                    TestCaseVO testCaseVO = new TestCaseVO(packageDoc, doc,naming,testing.getProperties(),
                     								convertersMap,new HashMap<String, List<Map<String, Object>>>(),
                     								sourceCode,newCode,new HashMap<String, List<String>>());
+                    System.out.println("getLoaderType:"+getLoaderType());
+                    
+                    testCaseVO.setLoaderType(StringHelper.getLoaderTypeFromExtension(getLoaderType()));
                     
                     returnValue = testing.codeTestCase(testCaseVO);
                     if (testing.isValid(newCode.toString())) {
@@ -418,9 +457,11 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
                             String testPackageName = fullTestCaseName.substring(0, fullTestCaseName.lastIndexOf("."));
                             //check the property overwrite converters, if yes then only generate the converters code
                             String overwriteConverters = testCaseVO.getProperties().getProperty(OVERWRITE_EXISTING_CONVERTERS);
-                            writing.writeConverterSources(getOutputRoot(),testPackageName,convertersMap,overwriteConverters);                            
+                            writing.writeConverterSources(getOutputRoot(),testPackageName,convertersMap,overwriteConverters);
+                            testSuiteVO.getTestClasses().add(fullTestCaseName);
                         } else {
                             reporter.printNotice("TestCase "+fullTestCaseName+ " did not change but "+fullClassName+" did.");
+                            
                         }
                     } else {
                         reporter.printError("Could not generate TestCase "+fullTestCaseName+ " (possible reason: missing or wrong properties).");
@@ -511,33 +552,118 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         PackageDoc[]     packageDocs;
         ClassDoc[]       classDocs;
         DocErrorReporter reporter;
-
+        
         reporter = createErrorReporter(isStrict());
 
         if (reporter != null) {
             reporter.printNotice("Generating TestSuites and TestCases.");
-
+            packageDocs = doc.specifiedPackages();            
+            
             classDocs = doc.specifiedClasses();
+            TestSuiteVO testSuiteVO = new TestSuiteVO(packageDocs,new ArrayList<String>());
+        	for (int j = 0; j < classDocs.length; j++) {
+            	LOG.debug("specifiedClasses processing");
+                returnValue = returnValue && processClass(classDocs[j], null, reporter,testSuiteVO);
+            }  
+            
+        	testSuiteVO.setTestSuiteClasses(new ArrayList<String>());
+        	
+            LOG.debug("specifiedPackages processing");
+            //traversing in reverse direction so that generation of test cases for sub packages(if specified) will happen first
+            //and then goes up in hierarchy till base package.
+            for (int i = packageDocs.length-1; i >= 0; i--) {
+            	
+            	//for sub packages no need to include upper level test cases, hence making them null.
+            	// to create new test suite for sub packages.
+            	//if( i > 0){
+            		testSuiteVO.setTestClasses(new ArrayList<String>());
+            	//}            	 
 
-            for (int i = 0; i < classDocs.length; i++) {
-                returnValue = returnValue && processClass(classDocs[i], null, reporter);
+            	returnValue = returnValue && processPackageClasses(packageDocs[i],testSuiteVO,reporter);
+                returnValue = returnValue && processPackage(testSuiteVO, i, reporter);
+                
+                /*
+            	String packageDocSpecified = packageDocs[i].name().replace('.', '/');
+                File file = new File(getSourcePath(),packageDocSpecified);
+                LOG.debug("packageDocSpecified"+packageDocSpecified);            
+                LOG.debug("specified package/file name:"+file.getAbsolutePath());
+                
+              
+                if(file.isDirectory() && generateSubpackageTestCases ){
+                	
+                	File[] packagesAndClasses = file.listFiles();
+                	LOG.debug("packagesAndClasses:"+packagesAndClasses.length);
+                	for(File packagesOrClass:packagesAndClasses){
+                		LOG.debug("packagesOrClass:"+packagesOrClass);
+                		if(packagesOrClass.isDirectory()){
+                			//System.out.println("processing this package through javadoc execute:"+packagesOrClass);
+                			String subPackage = packageDocs[i].name()+"."+packagesOrClass.getName();
+                			LOG.debug("processing this subPackage :"+subPackage);
+                			/*PackageDoc subPackageDoc = doc.packageNamed(subPackage);
+                			System.out.println("subPackageDoc:"+subPackageDoc.name());
+                			ClassDoc[] allClasses = subPackageDoc.allClasses();
+                			System.out.println("allClasses size"+allClasses.length);
+                			System.out.println("subPackageDoc is packageDoc"+subPackageDoc.commentText());
+                			PackageDoc[] subPackageDocs = new PackageDoc[1];
+                			subPackageDocs[0] = subPackageDoc;
+                			TestSuiteVO testSubPackageSuiteVO = new TestSuiteVO(subPackageDocs,new ArrayList<String>());
+                			returnValue = returnValue && processPackageClasses(subPackageDoc, testSubPackageSuiteVO, reporter);
+                			returnValue = returnValue && processPackage(testSubPackageSuiteVO, 0, reporter);
+                			*//*
+                			LOG.debug("processing this subPackage through javadoc execute:"+subPackage);
+                			String[] javadocargs = {subPackage,"-d", getOutputRoot(),
+                								  "-sourcepath", getSourcePath(),
+                								  "-doclet", "org.easetech.easytest.codegen.JUnitDoclet",
+                								  "-properties",getPropertyFileName(),
+                								  "-classpath","maven.compile.classpath",
+                								  "",""};
+                			if(getSeedDataFileName() != null) {
+                				int arrLen = javadocargs.length;      
+                				Arrays.fill(javadocargs,arrLen-2,arrLen-1,"-seedData");
+                				Arrays.fill(javadocargs,arrLen-1,arrLen,getSeedDataFileName());
+                			}
+                			int returnIntValue = com.sun.tools.javadoc.Main.execute(javadocargs);
+                			LOG.debug("returnIntValue"+returnIntValue);
+                			if(returnIntValue >= 0){
+                				returnValue = returnValue && true;
+                			} else {
+                				returnValue = returnValue && false;
+                			}
+
+                		}
+                		
+                	}
+                }*/
+
             }
-
-            packageDocs = doc.specifiedPackages();
-
-            for (int i = 0; i < packageDocs.length; i++) {
-                classDocs = packageDocs[i].ordinaryClasses();
-
-                for (int j = 0; j < classDocs.length; j++) {
-                    returnValue = returnValue && processClass(classDocs[j], packageDocs[i], reporter);
-                }
-                returnValue = returnValue && processPackage(packageDocs, i, reporter);
-            }
+            
+            
+            
         }
         return returnValue;
     }
 
-    protected DocErrorReporter createErrorReporter(boolean strict) {
+    private boolean processPackageClasses(PackageDoc packageDoc, TestSuiteVO testSuiteVO,
+			DocErrorReporter reporter) {
+    	LOG.debug("processPackageClasses started");
+    
+    	ClassDoc[] classDocs;
+    	boolean returnValue = true;
+    	
+    	classDocs = packageDoc.ordinaryClasses();
+    	LOG.debug("No.of class docs"+classDocs.length);
+        for (int j = 0; j < classDocs.length; j++) {
+        	System.out.println("processClass started for"+classDocs[j].name());
+            returnValue = returnValue && processClass(classDocs[j], packageDoc, reporter,testSuiteVO);
+        }           
+        
+        LOG.debug("processPackageClasses finished with value"+returnValue);
+        
+       return returnValue;
+
+	}
+
+	protected DocErrorReporter createErrorReporter(boolean strict) {
         DocErrorReporter result;
 
         result = new StrictDocErrorReporter(strict);
@@ -578,6 +704,10 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
             
             if (options[i][0].equals(OPTION_FILTER_PROPERTIES)) {
                 setFilterPropertyFileName(options[i][1]);
+            }
+            
+            if (options[i][0].equals(OPTION_LOADER_TYPE)) {
+                setLoaderType(options[i][1]);
             }
             
             if (options[i][0].equals(OPTION_SEED_DATA)) {
@@ -625,6 +755,8 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         } else if (s.equals(OPTION_NAMING)) {
             returnValue = 2;
         } else if (s.equals(OPTION_SEED_DATA)) {
+            returnValue = 2;
+        } else if (s.equals(OPTION_LOADER_TYPE)) {
             returnValue = 2;
         } // no else
 
@@ -682,6 +814,16 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
 
                     if (reporter != null) {
                         reporter.printError("Error:" + parameter[1] + " is not a property file.");
+                    }
+                }
+            }
+            
+            if (parameter[0].equals(OPTION_LOADER_TYPE)) {
+                if (!ValidationHelper.isLoaderTypeName(parameter[1])) {
+                    returnValue = false;
+
+                    if (reporter != null) {
+                        reporter.printError("Error:" + parameter[1] + " is not a valid loader type.");
                     }
                 }
             }
@@ -789,4 +931,3 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         this.strict = strict;
     }
 }
-

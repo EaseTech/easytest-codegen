@@ -2,7 +2,7 @@
     This file is part of  EasyTest CodeGen, a project to generate 
     JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
     during refactoring.
-   EasyTest CodeGen, a tool provided by
+ 	EasyTest CodeGen, a tool provided by
 	EaseTech Organization Under Apache License 2.0 
 	http://www.apache.org/licenses/LICENSE-2.0.txt
 */
@@ -11,9 +11,6 @@ package org.easetech.easytest.codegen;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -24,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.easetech.easytest.io.FileSystemResource;
+import org.easetech.easytest.io.Resource;
 import org.easetech.easytest.loader.Loader;
 import org.easetech.easytest.loader.LoaderFactory;
 import org.easetech.easytest.loader.LoaderType;
@@ -311,7 +310,7 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 	public void writeTestDataFile(String root, String fullClassName,
 			TestCaseVO testCaseVO,Properties seedData) {
 		File           file;
-        FileOutputStream     fos; 
+        //FileOutputStream     fos; 
         String         name;
         Map<String, List<Map<String, Object>>> testData = testCaseVO.getTestData();
         
@@ -331,42 +330,41 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
         	mergeSeedDataWithTestData(testData,seedDataValuesMap);
         }
         
-        try {
-            file = new File(root, name);
-            
-            if(file.exists()){
-            	LOG.debug("file exists so loading old data:");
-            	String overwrite = testCaseVO.getProperties().getProperty(OVERWRITE_EXISTING_TEST_DATA);
-            	//merge the existing test data if value doesn't exist or value is 'NO'
-            	if(overwrite == null || "NO".equalsIgnoreCase(overwrite)) {
-            		mergeToExistingDataFile(testData,file,dataLoader);
-            	}
-            }
+        file = new File(root, name);
+		
+		if(file.exists()){
+			LOG.debug("file exists so loading old data:");
+			String overwrite = testCaseVO.getProperties().getProperty(OVERWRITE_EXISTING_TEST_DATA);
+			//merge the existing test data if value doesn't exist or value is 'NO'
+			if(overwrite == null || "NO".equalsIgnoreCase(overwrite)) {
+				mergeToExistingDataFile(testData,file,dataLoader);
+			}
+		}
 
-            file.getParentFile().mkdirs();
-            
-            fos     = new FileOutputStream(file);
-            dataLoader.writeFullData(fos, testData);
-            fos     = null;
-            file    = null;
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
+		file.getParentFile().mkdirs();
+		
+		//fos     = new FileOutputStream(file);
+		//dataLoader.writeFullData(fos, testData);
+		
+		//ResourceLoader resourceLoader = new ResourceLoaderStrategy();
+		//Resource resource = resourceLoader.getResource(file.getAbsolutePath());
+		Resource resource = new FileSystemResource(root+File.separator+ name);
+		dataLoader.writeData(resource, testData);
+		//fos     = null;
+		file    = null;
 
-            throw new RuntimeException(ioe.toString());
-        }
-
-        if (fos != null) {    // Any error while working with BufferedWriter ?
-            try {
-            	fos.close();
-
-            	fos = null;
-                file       = null;
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-
-                throw new RuntimeException(ioe.toString());
-            }
-        }
+//        if (fos != null) {    // Any error while working with BufferedWriter ?
+//            try {
+//            	fos.close();
+//
+//            	fos = null;
+//                file       = null;
+//            } catch (IOException ioe) {
+//                ioe.printStackTrace();
+//
+//                throw new RuntimeException(ioe.toString());
+//            }
+//        }
 
         checkMandatoryFields(testCaseVO,seedDataValuesMap);
         if(testCaseVO.getTestDataMissingFields().size()>0){
@@ -462,22 +460,24 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 		LOG.debug("mergeToExistingData() started:"+file.getAbsolutePath());
 		
 		Map<String, List<Map<String, Object>>> oldData = null;
-		try {
-			FileInputStream fis = new FileInputStream(file);
-			oldData = dataLoader.loadFromInputStream(fis);
-			if(fis != null){
-				try {
-					fis.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				fis = null;
-			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+			//FileInputStream fis = new FileInputStream(file);
+			//oldData = dataLoader.loadFromInputStream(fis);			
+            Resource resource = new FileSystemResource(file.getAbsolutePath());
+			oldData = dataLoader.loadData(resource);
+//			if(fis != null){
+//				try {
+//					fis.close();
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//				fis = null;
+//			}
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		
 		LOG.debug("oldData loaded:"+oldData);
 		if(oldData!=null) mergeTestDataWithOldData(testData,oldData);
@@ -675,4 +675,3 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 		
 	}
 }
-

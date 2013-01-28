@@ -2,7 +2,7 @@
     This file is part of  EasyTest CodeGen, a project to generate 
     JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
     during refactoring.
-   EasyTest CodeGen, a tool provided by
+ 	EasyTest CodeGen, a tool provided by
 	EaseTech Organization Under Apache License 2.0 
 	http://www.apache.org/licenses/LICENSE-2.0.txt
 */
@@ -43,6 +43,7 @@ public class ConfigurableStrategy extends BaseObject implements IConfigurableStr
 	
 	protected static final String DEFAULT_PROPERTY_FILE_NAME  = "junit4.properties";
 	protected static final String DEFAULT_SEED_DATA_FILE_NAME  = "seed_data.properties";
+	protected static final String DEFAULT_LOADER_TYPE  = "EXCEL";
 
     private static Properties          properties;
     private static Properties          filterProperties;
@@ -364,4 +365,3 @@ public class ConfigurableStrategy extends BaseObject implements IConfigurableStr
 
 
 }
-

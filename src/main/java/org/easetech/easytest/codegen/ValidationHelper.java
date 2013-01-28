@@ -2,7 +2,7 @@
     This file is part of  EasyTest CodeGen, a project to generate 
     JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
     during refactoring.
-   EasyTest CodeGen, a tool provided by
+ 	EasyTest CodeGen, a tool provided by
 	EaseTech Organization Under Apache License 2.0 
 	http://www.apache.org/licenses/LICENSE-2.0.txt
 */
@@ -77,5 +77,21 @@ public class ValidationHelper {
 
         return returnValue;
     }
-}
 
+	public static boolean isLoaderTypeName(String name) {
+		boolean returnValue = false;
+
+        if ((name != null) && (name.length()>0)) {
+        	if("EXCEL".equals(name)
+        			|| "CSV".equals(name)
+        			|| "XML".equals(name)
+        			|| "CUSTOM".equals(name)) {
+        		
+        		returnValue = true;
+        	}
+            
+        }
+
+        return returnValue;
+	}
+}

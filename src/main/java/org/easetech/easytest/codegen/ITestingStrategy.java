@@ -2,7 +2,7 @@
     This file is part of  EasyTest CodeGen, a project to generate 
     JUnit test cases  from source code in EasyTest Template format and  helping to keep them in sync
     during refactoring.
-   EasyTest CodeGen, a tool provided by
+ 	EasyTest CodeGen, a tool provided by
 	EaseTech Organization Under Apache License 2.0 
 	http://www.apache.org/licenses/LICENSE-2.0.txt
 */
@@ -27,9 +27,10 @@ public interface ITestingStrategy extends IConfigurableStrategy {
     // one test suite per package
     public boolean isTestablePackage(PackageDoc doc, INamingStrategy naming);
 
-    public Properties getTestSuiteProperties(PackageDoc[] packageDocs, int indexPackage, INamingStrategy naming, Properties properties);
+    public Properties getTestSuiteProperties(TestSuiteVO testSuiteVO, int indexPackage);
 
-    public boolean codeTestSuite(PackageDoc[] packageDocs, int indexPackage, INamingStrategy naming, StringBuffer newCode, Properties properties);
+	public boolean codeTestSuite(TestSuiteVO testSuiteVO, int index);
+    //public boolean codeTestSuite(PackageDoc[] packageDocs, int indexPackage, INamingStrategy naming, StringBuffer newCode, Properties properties);
 
     // one test case per public (non abstract) class
     public boolean isTestableClass(ClassDoc doc, INamingStrategy naming);
@@ -42,6 +43,8 @@ public interface ITestingStrategy extends IConfigurableStrategy {
     public boolean isValid(String sourceCode);
 
     public boolean merge(StringBuffer inOutCode, StringBuffer inCode, String fullClassName);
+
+
 
 
     // one test per public method name (or less in case of combined tests)
