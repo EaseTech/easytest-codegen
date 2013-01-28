@@ -490,7 +490,21 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 			if(excludeFilters != null){    			
     			for(int j=0;j<excludeFilters.length;j++){
     				LOG.debug("excludeFilters[j]"+j+excludeFilters[j]);
-    				if(sourceCodeLines[i].contains(excludeFilters[j])){
+    				//if there are wildcard characters
+    				if(excludeFilters[j].contains("*")) {    					    					
+    					String[] words = excludeFilters[j].split("\\*");
+    					boolean allWordsExist = true;
+    					for(String word:words){    						
+    						if(!sourceCodeLines[i].contains(word)){
+    							allWordsExist = false;
+    							break;    							
+    						} 
+    					}
+    					if(allWordsExist){
+    						return false;
+    					}
+    					
+    				} else if(sourceCodeLines[i].contains(excludeFilters[j])){
     					return false;
     				}
     			}
@@ -499,7 +513,20 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 			if(includeFilters != null){ 
     			for(int j=0;j<includeFilters.length;j++){
     				LOG.debug("includeFilters[j]"+j+includeFilters[j]);
-    				if(sourceCodeLines[i].contains(includeFilters[j])){
+    				if(includeFilters[j].contains("*")) {    					    					
+    					String[] words = includeFilters[j].split("\\*");
+    					boolean allWordsExist = true;
+    					for(String word:words){    						
+    						if(!sourceCodeLines[i].contains(word)){
+    							allWordsExist = false;
+    							break;    							
+    						} 
+    					}
+    					if(allWordsExist){
+    						return true;
+    					}
+    					
+    				} else if(sourceCodeLines[i].contains(includeFilters[j])){
     					return true;
     				}
     			}
