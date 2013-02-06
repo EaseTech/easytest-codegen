@@ -90,6 +90,12 @@ public class StringHelper {
         return returnValue;
     }
 
+    /**
+     * converts first character of a String to upper case
+     * 
+     * @param s
+     * @return
+     */
     public static String firstToUpper(String s) {
 
         StringBuffer sb = new StringBuffer(s);
@@ -101,6 +107,13 @@ public class StringHelper {
         return sb.toString();
     }
 
+    /**
+     * replaces all the variable names in the template with the values provided in the properties.
+     * 
+     * @param template
+     * @param properties
+     * @return
+     */
     public static String replaceVariables(String template, Properties properties) {
     	LOG.info("replaceVariables started,template:"+template+" ,properties"+properties);
         String       returnValue = null;
@@ -179,11 +192,24 @@ public class StringHelper {
         System.out.println("StringHelper."+msg);
     }
 
-	public static String getFilePath(String packageName, String className, LoaderType loaderType) {
+	/**
+	 * Give file path for a package name, test class name and easytest LoaderType.
+	 * 
+	 * @param packageName
+	 * @param className
+	 * @param loaderType
+	 * @return
+	 */
+    public static String getFilePath(String packageName, String className, LoaderType loaderType) {
 		packageName = packageName.replace('.', '/');		
 		return packageName+"/"+className+getFileExtensionName(loaderType);
 	}
 
+	/**
+	 * Gives the appropriate file extension name for the easytest loader type
+	 * @param loaderType
+	 * @return
+	 */
 	public static String getFileExtensionName(LoaderType loaderType) {
 		String fileExtName = null;
 		System.out.print("loaderType:"+loaderType);
@@ -209,6 +235,12 @@ public class StringHelper {
 		return fileExtName;
 	}
 	
+	/**
+	 * Gives appropriate easy test loader name for the file extension name
+	 * 
+	 * @param extension
+	 * @return
+	 */
 	public static LoaderType getLoaderTypeFromExtension(String extension) {
 		LoaderType loaderType = LoaderType.EXCEL;
 		
@@ -225,6 +257,12 @@ public class StringHelper {
 		return loaderType;
 	}
 
+	/**
+	 * Gives the setter method name for an attribute name
+	 * 
+	 * @param name
+	 * @return
+	 */
 	public static String getSetterName(String name) {
 		String setterName = "set";
 		setterName = setterName + name.substring(0,1).toUpperCase() + name.substring(1);
