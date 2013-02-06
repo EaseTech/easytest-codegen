@@ -42,6 +42,10 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
     
     private Map<String,StringBuffer> javaSourceFileMap = new HashMap<String,StringBuffer>();
 
+    /**
+     * adjusts the source code with proper and standard indentation
+     * @param StringBuffer sourceCode
+     */
     public void indent(StringBuffer sourceCode) {
         int indentLevel = 0;
         int indentWidth = 0;
@@ -108,6 +112,9 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 
     /**
      * Merges generated source code with class file for given class name.
+     * 
+     * @param String root
+     * @param String fullClassName
      * @return true if successfully merged or target file does not exist, false if class file contains no JUnitDoclet markers.
      */
     public StringBuffer loadClassSource(String root, String fullClassName) {
@@ -221,7 +228,16 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
         return returnValue;
 	}
 
-	public void writeClassSource(String root, String fullClassName, StringBuffer sourceCode) {
+	/**
+	 * writes the source code to the destination file.
+	 * it creates the required folder structure if doesn't exist.
+	 * 
+	 * @param String root, 
+	 * @param String fullClassName
+	 * @param StringBuffer sourceCode
+	 * 
+	 */
+    public void writeClassSource(String root, String fullClassName, StringBuffer sourceCode) {
 
         File           file;
         FileWriter     fileWriter;
@@ -274,6 +290,15 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
         return returnValue;
     }
 
+    /**
+     * checks if file exists and it this file is the latest (newer).
+     * 
+     * @param String dirInQuestion, 
+     * @param String fullClassNameInQuestion,
+     * @param String dirReference, 
+     * @param String fullClassNameReference
+     * 
+     */
     public boolean isExistingAndNewer(String dirInQuestion, String fullClassNameInQuestion,
                                       String dirReference, String fullClassNameReference) {
         boolean returnValue = false;
@@ -307,7 +332,17 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
         return returnValue; 
     }
 
-	public void writeTestDataFile(String root, String fullClassName,
+	/**
+	 * writes test data file to the intended directory
+	 * It checks the user configuration whether to overwrite the test data file if exists or not
+	 * It also checks if mandatory fields are missing in the seed data file and accordningly it creates the log file
+	 * 
+	 * @param String root, 
+	 * @param String fullClassName,
+	 * @param TestCaseVO testCaseVO,
+	 * @param Properties seedData
+	 */
+    public void writeTestDataFile(String root, String fullClassName,
 			TestCaseVO testCaseVO,Properties seedData) {
 		File           file;
         //FileOutputStream     fos; 
@@ -315,8 +350,8 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
         Map<String, List<Map<String, Object>>> testData = testCaseVO.getTestData();
         
         //LoaderType loaderType;        
-        Loader dataLoader = LoaderFactory.getLoader(LoaderType.EXCEL);
-        name = translateClassNameToTestDataFileName(fullClassName,LoaderType.EXCEL);
+        Loader dataLoader = LoaderFactory.getLoader(testCaseVO.getLoaderType());
+        name = translateClassNameToTestDataFileName(fullClassName,testCaseVO.getLoaderType());
         LOG.debug("WriteTestDataFile root:"+root+",name:"+name);
         root = root.replaceFirst("test/java", "test/resources");
         LOG.debug("seedData:"+seedData);
@@ -419,7 +454,14 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 		
 	}
 
-	private void checkMandatoryFields(TestCaseVO testCaseVO,Map<String,List<String>> seedDataValuesMap) {
+	/**
+	 * Checks if mandatory fields exist in the seed data file
+	 * and sets the missing data fields in the testCaseVO for further processing
+	 * 
+	 * @param testCaseVO
+	 * @param seedDataValuesMap
+	 */
+    private void checkMandatoryFields(TestCaseVO testCaseVO,Map<String,List<String>> seedDataValuesMap) {
 		//Map<String, List<Map<String, Object>>> testData = testCaseVO.getTestData();
 		Map<String,List<String>> mandatoryFields = testCaseVO.getTestDataMandatoryFields();
 		LOG.debug("checkMandatoryFields started: mandatoryFields:"+mandatoryFields);
@@ -455,7 +497,14 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 		
 	}
 
-	private void mergeToExistingDataFile(
+	/**
+	 * Merge to existing test data file so that existing test data will not be overwritten
+	 * 
+	 * @param testData
+	 * @param file
+	 * @param dataLoader
+	 */
+    private void mergeToExistingDataFile(
 			Map<String, List<Map<String, Object>>> testData, File file, Loader dataLoader) {
 		LOG.debug("mergeToExistingData() started:"+file.getAbsolutePath());
 		
@@ -485,7 +534,13 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 		
 	}
 
-	private void mergeTestDataWithOldData(Map<String, List<Map<String, Object>>> testData,
+	/**
+	 * Merge testdata map with old test data map
+	 * 
+	 * @param testData
+	 * @param oldData
+	 */
+    private void mergeTestDataWithOldData(Map<String, List<Map<String, Object>>> testData,
 			Map<String, List<Map<String, Object>>> oldData) {
 		LOG.debug("mergeTestDataWithOldData() started:");
 		
@@ -537,7 +592,15 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 		
 	}
 
-	private void mergeSeedDataWithTestData(
+	/**
+	 * Important method for populating test data from seed data values map.
+	 * It checks if the parameter name in the seed data map is same as the parameter name in the test data, 
+	 * then it inserts the seed data values to test data. It does for appropriate permutation and combinations of parameters.
+	 * 
+	 * @param testData
+	 * @param seedDataValuesMap
+	 */
+    private void mergeSeedDataWithTestData(
 			Map<String, List<Map<String, Object>>> testData,
 			Map<String, List<String>> seedDataValuesMap) {
 		LOG.debug("mergeSeedDataWithTestData() started:");
@@ -576,7 +639,12 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 		
 	}
 
-	private Map<String, List<String>> loadSeedDataValues(Properties seedData) {
+	/**
+	 * loads seed data from properties to map
+	 * @param seedData
+	 * @return Map<String, List<String>> seed data values map
+	 */
+    private Map<String, List<String>> loadSeedDataValues(Properties seedData) {
 		LOG.debug("loadSeedDataValues() started:"+seedData);
 		Map<String,List<String>> seedDataValuesMap = new HashMap<String,List<String>>();
 		for(Object keyObj:seedData.keySet()){
@@ -608,19 +676,20 @@ public class WritingStrategy extends ConfigurableStrategy implements IWritingStr
 
 	private String translateClassNameToTestDataFileName(String fullClassName, LoaderType loaderType) {
         String returnValue;
-        String extension = ".xls";
-        if(LoaderType.CSV.equals(loaderType)){
-        	extension = ".csv";
-        }else if(LoaderType.EXCEL.equals(loaderType)){
-        	extension = ".xls";
-        }else if(LoaderType.XML.equals(loaderType)){
-        	extension = ".xml";
-        }
+        String extension = StringHelper.getFileExtensionName(loaderType);       
         returnValue = fullClassName.replace('.', File.separatorChar) + extension;
 
         return returnValue;
 	}
 
+	/**
+	 * Writes the converters class source code to appropriate destination folders
+	 * 
+	 * @param String outputRoot, 
+	 * @param String packageName,
+	 * @param Map<String, StringBuffer> convertersMap, 
+	 * @param String overwriteConverters
+	 */
 	public void writeConverterSources(String outputRoot, String packageName,
 			Map<String, StringBuffer> convertersMap, String overwriteConverters) {
 		
