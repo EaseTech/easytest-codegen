@@ -183,11 +183,7 @@
     		<artifactId>easytest-core</artifactId>  
             <version>0.8-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.visaeu.rcs.application.testframework.app</groupId>
-    		<artifactId>testframework-app</artifactId>  
-            <version>1.0</version>
-        </dependency>
+
         <!--  dependency>
             <groupId>org.easetech</groupId>
     		<artifactId>easytest-codegen</artifactId>  
