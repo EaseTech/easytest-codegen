@@ -337,6 +337,14 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
 
         return returnValue;
     }
+    /**
+     * method to process package level information and creates a test suite for all the test classes.
+     * 
+     * @param testSuiteVO contains package docs.
+     * @param index to represent the package among the all packageDocs.
+     * @param reporter
+     * @return
+     */
 
     public boolean processPackage( TestSuiteVO testSuiteVO, int index, DocErrorReporter reporter) {
     	
@@ -393,7 +401,18 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         LOG.info("processPackage finished, returnValue:"+returnValue);
         return returnValue;
     }
-
+    
+    /**
+     * Method to process the classdoc and creates a test case for each class doc as for configuration.
+     * It internally uses TestingStrategy class to create the test case
+     * It writes the test case and test data to appropriate folder, and it uses WritingStrategy for that.
+     * 
+     * @param doc is ClassDoc instance
+     * @param packageDoc
+     * @param reporter
+     * @param testSuiteVO
+     * @return
+     */
     public boolean processClass(ClassDoc doc, PackageDoc packageDoc, DocErrorReporter reporter, TestSuiteVO testSuiteVO) {
     	
     	LOG.info("processClass started, ClassDoc:"+doc);
@@ -485,8 +504,13 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         return returnValue;
     }
 
+
     /**
      * Checks if file of application class is modified later than TestCase file.
+     * 
+     * @param fullClassName
+     * @param fullTestCaseName
+     * @return
      */
     public boolean isGenerationNeeded(String fullClassName, String fullTestCaseName) {
     	
@@ -502,7 +526,14 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         LOG.info("isGenerationNeeded finished, returnValue:"+returnValue);
         return returnValue;
     }
-
+    
+    /**
+     * Checks if anything changed in the test case/class then decides whether to write that or not.
+     * 
+     * @param newCode
+     * @param oldCode
+     * @return
+     */
     public boolean isWritingNeeded(StringBuffer newCode, StringBuffer oldCode) {
     	LOG.info("isWritingNeeded started, newCode:"+newCode);
         boolean returnValue;
@@ -669,6 +700,11 @@ public class JUnitDoclet extends Doclet implements JUnitDocletProperties {
         result = new StrictDocErrorReporter(strict);
         return result;
     }
+	
+	/**
+	 * This method sets the options provided as Java arguments to JavaDoc execute method.
+	 * @param options array of argument name and values
+	 */
 
     public void setOptions(String[][] options) {
 
