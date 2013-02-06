@@ -41,18 +41,39 @@ public class ConfigurableStrategy extends BaseObject implements IConfigurableStr
      */
     protected static final Logger LOG = LoggerFactory.getLogger(ConfigurableStrategy.class);
 	
+    /**
+     * Default template file name.
+     */
 	protected static final String DEFAULT_PROPERTY_FILE_NAME  = "junit4.properties";
+	/**
+     * Default seed data file name.
+     */
 	protected static final String DEFAULT_SEED_DATA_FILE_NAME  = "seed_data.properties";
+	/**
+     * Loader type is defaulted to EXCEL.
+     */
 	protected static final String DEFAULT_LOADER_TYPE  = "EXCEL";
 
+	/**
+     * Properties loaded from template file.
+     */
     private static Properties          properties;
     private static Properties          filterProperties;
+    /**
+     * Properties loaded from seed data file. 
+     * Seed data is the domain data values provided by the user
+     * Codegen will use that seed data to generate the test case parameter values and store it in the input test data file
+     * 
+     */
     private static Properties          seedData;
     private static Map<String, String> templateCache;
 
     private        String              propertyFileName;
     private        String              filterPropertyFileName;
     private        String              seedDataFileName;
+    /**
+     * Instance of javadoc DocErrorReporter to capture all warnings/errors etc..
+     */
     private        DocErrorReporter    docErrorReporter;
 
     public ConfigurableStrategy() {
@@ -333,10 +354,15 @@ public class ConfigurableStrategy extends BaseObject implements IConfigurableStr
         return sb.toString();
     }
 
+    
     public void setDocErrorReporter(DocErrorReporter reporter) {
         docErrorReporter = reporter;
     }
 
+    /**
+     * prints notice message to doc error reporter.
+     * 
+     */
     public void printNotice(String msg) {
         if (isNotNull(docErrorReporter)) {
             docErrorReporter.printNotice(msg);
@@ -344,7 +370,11 @@ public class ConfigurableStrategy extends BaseObject implements IConfigurableStr
             System.out.println(msg);
         }
     }
-
+    
+    /**
+     * prints warning message to doc error reporter.
+     * 
+     */
     public void printWarning(String msg) {
         if (isNotNull(docErrorReporter)) {
             docErrorReporter.printWarning(msg);
@@ -352,7 +382,11 @@ public class ConfigurableStrategy extends BaseObject implements IConfigurableStr
             System.err.println(msg);
         }
     }
-
+    
+    /**
+     * prints error message to doc error reporter.
+     * 
+     */
     public void printError(String msg) {
         if (isNotNull(docErrorReporter)) {
             docErrorReporter.printError(msg);
