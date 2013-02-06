@@ -393,6 +393,13 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return returnValue;
     }
 
+    /**
+     * Gets the imports template and add all the imports from properties to imports set.
+     * 
+     * @param returnValue
+     * @param importsSet
+     * @return
+     */
     private String codeImports(Properties returnValue,
 			Set<String> importsSet) {
     	StringBuffer importsListValue = new StringBuffer();
@@ -410,7 +417,16 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 
 
 
-	private String getTestMethods(TestCaseVO testCaseVo,TestMethodVO testMethodVO) {
+	/**
+	 * creates test methods for all the valid business methods
+	 * It also checks if filters include/exclude are available in the source code,
+	 * based on the user choice it decides whether to generate the test case for the method or not.
+	 * 
+	 * @param testCaseVo
+	 * @param testMethodVO
+	 * @return
+	 */
+    private String getTestMethods(TestCaseVO testCaseVo,TestMethodVO testMethodVO) {
     	LOG.debug("getTestMethods started,");
     	StringBuffer sb;
         MethodDoc[] methodDocs;
@@ -439,6 +455,13 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
         return testMethodVO.getNewCode().toString();
     }
 
+    /**
+     * checks the existence of the configured filters (java statements/strings) in the source code
+     * 
+     * @param sourceCode
+     * @param filterProperties
+     * @return
+     */
     private boolean isFiltered(StringBuffer sourceCode, Properties filterProperties) {
     	boolean isFiltered = false;
     	LOG.debug("isFiltered started");
@@ -542,6 +565,14 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
     	return isFiltered;
     }
     
+    /**
+     * gets the method source code from the class source codde between start position and end position
+     * 
+     * @param javaClassSource
+     * @param startPosition
+     * @param endPosition
+     * @return
+     */
     private StringBuffer getMethodSourceCode(StringBuffer javaClassSource,
 			int startPosition, int endPosition) {
     	
@@ -559,8 +590,14 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 		return methodSourceCode;
 	}
 
-	// Method to count no.of lines in comment and add commented line index to array
- 	private int skipCommentLines(String[] sourceCodeLines, int textIndex){
+	
+ 	/**
+ 	 * Method to count no.of lines in comment and add commented line index to array
+ 	 * @param sourceCodeLines
+ 	 * @param textIndex
+ 	 * @return
+ 	 */
+    private int skipCommentLines(String[] sourceCodeLines, int textIndex){
 
  		boolean isSkipped = false;
  		String sourceCodeLine = sourceCodeLines[textIndex];
@@ -710,7 +747,18 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 		return returnTypeName;
 	}
 
-	private void codeConvertersAndEditors(Properties returnValue, Type type,
+	/**
+	 * generate the code snippet for the converters and editors
+	 * 
+	 * @param returnValue
+	 * @param type
+	 * @param testCaseVO
+	 * @param data
+	 * @param parameterName
+	 * @param testMethodVO
+	 * @param mandatoryFields
+	 */
+    private void codeConvertersAndEditors(Properties returnValue, Type type,
 			TestCaseVO testCaseVO,
 			Map<String, Object> data, String parameterName, 
 			TestMethodVO testMethodVO,List<String> mandatoryFields) {
@@ -810,6 +858,20 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 
 
 
+	/**
+	 * Generate the code snippet for the required converter classes
+	 *
+	 * It reads the the attributes from classDoc of the converter class and use the setters of all those attributes,
+	 * and constructs the converter class.
+	 * 
+	 * @param returnValue
+	 * @param type
+	 * @param parameterName
+	 * @param testCaseVO
+	 * @param data
+	 * @param testMethodVO
+	 * @param mandatoryFields
+	 */
 	private void codeConverterClasses(Properties returnValue, Type type,String parameterName, 
 			TestCaseVO testCaseVO, 
 			Map<String, Object> data, 
@@ -970,6 +1032,15 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 		return isEnum;
 	}
 
+	/**
+	 * Checks the occurrence of getter of a particular attribute of a object in side the method source code,
+	 * if presents then treats it as mandatory field to be included in test data generation
+	 * 
+	 * @param methodSourceCode
+	 * @param objectName
+	 * @param name
+	 * @return
+	 */
 	private boolean isMandatory(StringBuffer methodSourceCode, String objectName,String name) {
 		LOG.debug("isMandatory started: objectName"+objectName+", fieldName:"+name);
 		LOG.debug("methodSourceCode:"+methodSourceCode.toString());
@@ -1160,6 +1231,13 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 	}	
 	
 
+	/**
+	 * Generate the test suite by checking if sub packages test suites exists
+	 * 
+	 * @param testSuiteVO
+	 * @param indexPackage
+	 * @return
+	 */
 	public String getTestSuiteAddTestSuites(TestSuiteVO testSuiteVO, int indexPackage) {
         StringBuffer sb;
         String template;
@@ -1203,7 +1281,14 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 		return false;
 	}
 
-	public String getTestSuiteAddTestCases(TestSuiteVO testSuiteVO, int indexPackage) {
+	/**
+	 * adds test cases to test suite
+	 * 
+	 * @param testSuiteVO
+	 * @param indexPackage
+	 * @return
+	 */
+    public String getTestSuiteAddTestCases(TestSuiteVO testSuiteVO, int indexPackage) {
         StringBuffer sb;
         String template;
         String templateForNormalItem;
@@ -1255,6 +1340,13 @@ public class TestingStrategy extends ConfigurableStrategy implements ITestingStr
 		return false;
 	}
 
+	
+	/**
+	 * generates the test suite imports
+	 * 
+	 * @param testSuiteVO
+	 * @return
+	 */
 	public String getTestSuiteImports(TestSuiteVO testSuiteVO) {
         StringBuffer sb;
         String template;
