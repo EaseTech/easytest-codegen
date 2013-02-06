@@ -18,12 +18,19 @@ package org.easetech.easytest.codegen;
 
 public class NamingStrategy extends ConfigurableStrategy implements INamingStrategy, JUnitDocletProperties {
 
-    //
+    /**
+     * Default test case extension
+     */
     private String TEST_CASE_EXT         = "Test";  
-
+    
+    /**
+     * default test suite extension
+     */
 	private String TEST_SUITE_EXT        = "Suite";
    
-
+	/**
+	 * test method prefix constant
+	 */
 	private static final String TEST_METHOD_PREFIX    = "test";
 
     private String cachedDefaultTestSuiteName = null;
@@ -69,7 +76,12 @@ public class NamingStrategy extends ConfigurableStrategy implements INamingStrat
     public void setSubPackage(String subPackage) {
         this.subPackage = subPackage;
     }
-
+    
+    /**
+     * Checks if the package name is same as the package name
+     * explicitly provided by user for processing with option -subpackage
+     * String packageName
+     */
     public boolean isTestPackageName(String packageName) {
         boolean returnValue = false;
         String  subName;
@@ -81,7 +93,12 @@ public class NamingStrategy extends ConfigurableStrategy implements INamingStrat
         }
         return returnValue;
     }
-
+    
+    /**
+     * Checks if the class name is present in the package that is 
+     * explicitly provided by the user for processing with option -subpackage
+     * String packageName 
+     */
     public boolean isTestClassName(String fullClassName) {
         boolean returnValue = true;
         String  subName;
@@ -106,6 +123,12 @@ public class NamingStrategy extends ConfigurableStrategy implements INamingStrat
         return returnValue;
     }
 
+    /**
+     * Checks if package name of the class is same as the sub package name.
+     * @param fullClassName
+     * @param subName sub package name.
+     * @return
+     */
     private boolean isTestClassNameInSubpackage(String fullClassName, String subName) {
         return ((fullClassName.indexOf("." + subName + ".") != -1) || fullClassName.startsWith(subName + "."));
     }
@@ -114,6 +137,10 @@ public class NamingStrategy extends ConfigurableStrategy implements INamingStrat
         return ((fullClassName.endsWith(TEST_SUITE_EXT)) || (fullClassName.endsWith(TEST_CASE_EXT)));
     }
 
+    /**
+     * removes package name from the full class name
+     * @param className full class name
+     */
     public String stripParentPackage(String className) {
 
         String returnValue = null;
@@ -131,6 +158,11 @@ public class NamingStrategy extends ConfigurableStrategy implements INamingStrat
         return returnValue;
     }
 
+    /**
+     * strips the package name from class name and appends test case extension
+     * 
+     * @param fullClassName
+     */
     public String getTestCaseName(String fullClassName) {
 
         String returnValue     = null;
@@ -206,6 +238,13 @@ public class NamingStrategy extends ConfigurableStrategy implements INamingStrat
         return combinePackageClass(testPackageName, testSuiteName);
     }
 
+    /**
+     * Combines package name and class name.
+     * 
+     * @param packageName
+     * @param className
+     * @return
+     */
     public String combinePackageClass(String packageName, String className) {
         String returnValue;
 
@@ -219,6 +258,10 @@ public class NamingStrategy extends ConfigurableStrategy implements INamingStrat
 
     }
 
+    /**
+     * prefixes test to method name
+     * @param methodName
+     */
     public String getTestMethodName(String methodName) {
 
         StringBuffer sb;
