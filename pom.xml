@@ -100,7 +100,7 @@
 			<artifactId>maven-release-plugin</artifactId>
 			<version>2.2.2</version>
 			<configuration>
-			<username>ravi.polampelli</username>
+			<username>ravi-polampelli</username>
 			<password>temp123</password>
 			<mavenExecutorId>forked-path</mavenExecutorId>
 			</configuration>
