@@ -36,9 +36,9 @@
        <url>https://github.com/EaseTech/easytest-codegen/issues</url>
     </issueManagement>
     <scm>
-       <connection>scm:git:git://github.com/EaseTech/easytest-codegen.git</connection>
-       <developerConnection>scm:git:git@github.com/EaseTech/easytest-codegen.git</developerConnection>
-       <url>https:/github.com/EaseTech/easytest-codegen.git</url>
+       	<connection>scm:git:https://ravi-polampelli@github.com/EaseTech/easytest-codegen.git</connection>
+        <developerConnection>scm:git:https://ravi-polampelli@github.com/EaseTech/easytest-codegen.git</developerConnection>
+        <url>scm:git:https://ravi-polampelli@github.com/EaseTech/easytest-codegen</url>
     </scm>
 
   <properties>
@@ -87,6 +87,26 @@
 	              </tasks>
                </configuration>
             </plugin>
+            	<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-gpg-plugin</artifactId>
+			<version>1.1</version>
+			<configuration>
+			<useAgent>true</useAgent>
+			</configuration>
+		</plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-release-plugin</artifactId>
+			<version>2.2.2</version>
+			<configuration>
+			<username>ravi.polampelli</username>
+			<password>temp123</password>
+			<mavenExecutorId>forked-path</mavenExecutorId>
+			</configuration>
+		</plugin>
+
+
         </plugins>
     </build>
 	<dependencies>
